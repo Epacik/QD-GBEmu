@@ -24,7 +24,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Pliki nagłówkowe</Filter>
     </ClInclude>
-    <ClInclude Include="Bus.h">
+    <ClInclude Include="bus.h">
       <Filter>Pliki nagłówkowe\Emu</Filter>
     </ClInclude>
     <ClInclude Include="Cpu.h">
@@ -35,7 +35,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
-    <ClCompile Include="Bus.cpp">
+    <ClCompile Include="bus.cpp">
       <Filter>Pliki źródłowe\Emu</Filter>
     </ClCompile>
     <ClCompile Include="Cpu.cpp">

@@ -18,7 +18,7 @@ namespace Emulator
 		void Connect(Bus* bus);
 
 	private:
-		Bus* Bus = nullptr;
+		Bus* bus = nullptr;
 
 		void Write(uint16_t address, uint8_t data);
 		uint8_t Read(uint16_t address);
