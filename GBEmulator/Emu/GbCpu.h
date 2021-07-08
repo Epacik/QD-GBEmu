@@ -9,11 +9,11 @@ namespace Emulator
 {
 	class Bus;
 
-	class Cpu
+	class GbCpu
 	{
 	public:
-		Cpu();
-		~Cpu();
+		GbCpu();
+		~GbCpu();
 
 		void Connect(Bus* bus);
 
@@ -37,6 +37,9 @@ namespace Emulator
 		uint8_t FlagsState = 0x00;
 
 		void SetFlag(Flags flag);
+		void UnsetFlag(Flags flag);
+
+		bool IsFlagSet(Flags flag);
 
 	};
 }
