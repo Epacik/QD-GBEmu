@@ -29,14 +29,14 @@ namespace Emulator {
 
 
     void GbCpu::SetFlag(GbCpu::Flags flag){
-        FlagsState |= flag;
+        Registers.FlagsState |= flag;
     }
     void GbCpu::UnsetFlag(GbCpu::Flags flag){
-        FlagsState &= ~flag;
+        Registers.FlagsState &= ~flag;
     }
 
     bool GbCpu::IsFlagSet(GbCpu::Flags flag){
-        return (FlagsState & flag);
+        return (Registers.FlagsState & flag);
     }
 
 }

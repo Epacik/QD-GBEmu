@@ -14,7 +14,23 @@ namespace Windows {
     public:
         Registers(const wxPoint &pos);
 
+
+
     private:
+        void UpdateValues();
+
+    protected:
+        wxStaticText* AccumulatorValue;
+        wxStaticText* FlagsValue;
+        wxStaticText* BValue;
+        wxStaticText* CValue;
+        wxStaticText* DValue;
+        wxStaticText* EValue;
+        wxStaticText* HValue;
+        wxStaticText* LValue;
+        wxStaticText* SPValue;
+        wxStaticText* PCValue;
+
 
     wxDECLARE_EVENT_TABLE();
     };

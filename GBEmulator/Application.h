@@ -19,6 +19,9 @@ public:
 
     std::unique_ptr<Emulator::Bus> EmulatorBus;
 
+
 };
+
+Application &GetApp();
 
 #endif //GBEMU_APPLICATION_H

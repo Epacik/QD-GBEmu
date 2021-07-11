@@ -4,6 +4,7 @@
 
 
 #include "Bus.h"
+#include "CpuRegisters.h"
 
 namespace Emulator
 {
@@ -33,8 +34,7 @@ namespace Emulator
 			Carry = (1 << 4),
 		};
 
-		uint8_t Accumulator = 0x00;
-		uint8_t FlagsState = 0x00;
+        CpuRegisters Registers;
 
 		void SetFlag(Flags flag);
 		void UnsetFlag(Flags flag);
