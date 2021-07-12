@@ -1,9 +1,11 @@
-#include "Bus.h"
+#include <iostream>
+#include "GbBus.h"
+
+class Application;
 namespace Emulator {
-    Bus::Bus() {
-        // Reset values in devices connected to the Bus
+    GbBus::GbBus() {
 
-
+        // Reset values in devices connected to the GbBus
         for (auto &item : VideoRam) {
             item = 0x00;
         }
@@ -26,13 +28,24 @@ namespace Emulator {
 
         Cpu = std::make_unique<GbCpu>();
         Cpu->Connect(this);
+
+        Clock.OnClockCycle = std::make_shared<std::function<void()>>([this] {
+            Cpu->Registers.PC += 1;
+
+
+            //App
+            if(OnRefreshUI != nullptr){
+                (*OnRefreshUI)();
+            }
+        });
     }
 
-    Bus::~Bus() {
+
+    GbBus::~GbBus() {
 
     }
 
-    void Bus::Write(uint16_t address, uint8_t data) {
+    void GbBus::Write(uint16_t address, uint8_t data) {
         if (address >= 0x0000 && address <= 0x7FFF && Cartridge != nullptr) {
             Cartridge->Write(address, data);
         }
@@ -67,7 +80,7 @@ namespace Emulator {
         }
     }
 
-    uint8_t Bus::Read(uint16_t address, bool readonly) {
+    uint8_t GbBus::Read(uint16_t address, bool readonly) {
         if(address >= 0x0000 && address <= 0x00FF && !BootCompleted){
             return BootROM[address];
         }
@@ -107,4 +120,10 @@ namespace Emulator {
 
         return 0x00;
     }
+
+    void GbBus::SetOnRefreshUI(std::shared_ptr<std::function<void()>> func) {
+        OnRefreshUI = func;
+    }
+
+
 }
