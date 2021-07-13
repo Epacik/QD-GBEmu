@@ -34,21 +34,21 @@ namespace Emulator {
 
 		std::unique_ptr<Emulator::GbCpu> Cpu;
 
-		std::array<uint8_t, 0x00FF> BootROM{};
+		std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF
 
-		std::unique_ptr<GbCartridge> Cartridge = nullptr;
+		std::unique_ptr<GbCartridge> Cartridge = nullptr;            // 0x0000 -> 0x7FFF
 //        std::array<uint8_t, 0x3FFF> GameRom0;
 //        std::array<uint8_t, 0x3FFF> GameRomX;
 
-        std::array<uint8_t, 0x1FFF> VideoRam{};
-        std::array<uint8_t, 0x1FFF> ExternalRam{};
-        std::array<uint8_t, 0x1FFF> WorkRam{};
-        std::array<uint8_t, 0x009F> SpriteAttributeTable{};
+        std::array<uint8_t, 0x1FFF> VideoRam{};                      // 0x8000 -> 0x9FFF
+        std::array<uint8_t, 0x1FFF> ExternalRam{};                   // 0xA000 -> 0xBFFF
+        std::array<uint8_t, 0x1FFF> WorkRam{};                       // 0xC000 -> 0xDFFF
+        std::array<uint8_t, 0x009F> SpriteAttributeTable{};          // 0xFE00 -> 0xFE9F
 
-        std::array<uint8_t, 0x007F> IORegisters{};
-        std::array<uint8_t, 0x007F> HighRam{};
+        std::array<uint8_t, 0x007F> IORegisters{};                   // 0xFF00 -> 0xFF7F
+        std::array<uint8_t, 0x007F> HighRam{};                       // 0xFF80 -> 0xFFFE
 
-        uint8_t                     InterruptEnableRegister = 0x00;
+        uint8_t                     InterruptEnableRegister = 0x00;  // 0xFFFF
 
 	public:
 		void Write(uint16_t address, uint8_t data);
