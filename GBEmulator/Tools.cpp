@@ -11,7 +11,7 @@
 
 
 namespace Tools{
-    namespace BitString{
+    namespace StringConverters{
         //converts uint16_t to wxString
         wxString GetBinaryString(uint16_t val) {
             auto bitStr = std::bitset<16>(val).to_string();
