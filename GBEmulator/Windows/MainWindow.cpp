@@ -7,6 +7,7 @@
 #include "../Application.h"
 #include "../global.h"
 
+
 namespace Windows {
 
     enum class MenuItems {
@@ -22,9 +23,10 @@ namespace Windows {
         EVT_MENU(wxID_ABOUT,                      Main::OnAbout)
     wxEND_EVENT_TABLE()
 
-    Main::Main(const wxString &title, const wxPoint &pos, const wxSize &size)
+    Main::Main(const wxString &title, const wxPoint &pos, const wxSize &size, Application *app)
             : wxFrame(nullptr, wxID_ANY, title, pos, size) {
 
+        this->App = app;
         CreateMenuBar();
 
         CreateStatusBar();
@@ -47,8 +49,15 @@ namespace Windows {
     void Main::OnOpenRegistersWindow(wxCommandEvent &event) {
         // wxLogMessage("Opening registers window");
 
-        auto regWindow = new Windows::Registers(wxPoint(50, 50));
-        regWindow->Show(true);
+        if(App->RegistersWindow == nullptr){
+            auto regWindow = new Windows::Registers(wxPoint(50, 50));
+            regWindow->Show(true);
+            return;
+        }
+
+        App->RegistersWindow->SetFocus();
+        App->RegistersWindow->Show(true);
+
     }
 
     void Main::CreateMenuBar() {

@@ -5,14 +5,18 @@
 #ifndef GBEMU_MAINWINDOW_H
 #define GBEMU_MAINWINDOW_H
 
+#include <wx/app.h>
+#include "../Application.h"
 #include "../global.h"
+#include "../Tools.h"
+
+class Application;
+
 namespace Windows {
-
-
 
     class Main : public wxFrame {
     public:
-        Main(const wxString &title, const wxPoint &pos, const wxSize &size);
+        Main(const wxString &title, const wxPoint &pos, const wxSize &size, Application *app);
 
     private:
         void OnHello(wxCommandEvent &event);
@@ -25,6 +29,8 @@ namespace Windows {
 
 
         void CreateMenuBar();
+
+        Application * App;
 
     wxDECLARE_EVENT_TABLE();
     };
