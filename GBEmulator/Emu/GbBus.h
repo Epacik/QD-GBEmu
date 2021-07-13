@@ -29,6 +29,7 @@ namespace Emulator {
 	    bool BootCompleted = false;
 
         std::shared_ptr<std::function<void()>> OnRefreshUI = nullptr;
+
     public: //devices
 	    GbClock Clock {1024};
 
