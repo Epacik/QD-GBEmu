@@ -8,16 +8,21 @@
 #include "../Application.h"
 #include "../Emu/GbCpu.h"
 
+#include "../Tools.h"
 #include "../global.h"
+
 namespace Windows {
     class Registers : public wxFrame {
     public:
         Registers(const wxPoint &pos);
+        ~Registers();
 
 
+        void UpdateValues();
 
     private:
-        void UpdateValues();
+
+        wxString GetFlagsString(uint8_t val);
 
     protected:
         wxStaticText* AccumulatorValue;
@@ -32,7 +37,7 @@ namespace Windows {
         wxStaticText* PCValue;
 
 
-    wxDECLARE_EVENT_TABLE();
+       //wxDECLARE_EVENT_TABLE();
     };
 
 }

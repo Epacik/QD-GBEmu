@@ -8,12 +8,11 @@
 #include "../Tools.h"
 
 namespace Windows{
-    wxBEGIN_EVENT_TABLE(Registers, wxFrame)
-    wxEND_EVENT_TABLE()
 
     Registers::Registers(const wxPoint &pos)
             : wxFrame(nullptr, wxID_ANY, "Registers", pos, wxSize(200, 400)) {
 
+        GetApp().RegistersWindow = this;
         this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
         wxBoxSizer* MainSizer;
@@ -148,15 +147,36 @@ namespace Windows{
         UpdateValues();
     }
 
+    Registers::~Registers() {
+        GetApp().RegistersWindow = nullptr;
+    }
+
+
+    // values used to limit updates
+    std::chrono::time_point<std::chrono::system_clock> UpdatedOn;
+    std::chrono::milliseconds UpdateDelta(100);
+
+    // Get values of registers and displays them in a window
     void Registers::UpdateValues() {
-        using namespace Tools::BitString;
+
+        // limit updates so they won't use a half of a CPU
+        // updates should occur at most once every 100ms or so
+        auto now = std::chrono::system_clock::now();
+        if(now - UpdatedOn < UpdateDelta){
+            return;
+        }
+        UpdatedOn = now;
+
+        //some binary to string converters
+        using namespace Tools::StringConverters;
 
         auto registers = GetApp().EmulatorBus->Cpu->Registers;
 
         //Accumulator
         AccumulatorValue->SetLabel(GetBinaryString(registers.Accumulator));
 
-        FlagsValue->SetLabel(GetBinaryString(registers.FlagsState));
+        FlagsValue->SetLabel(GetFlagsString
+        (registers.FlagsState));
 
         BValue->SetLabel(GetBinaryString(registers.B));
 
@@ -173,5 +193,18 @@ namespace Windows{
         SPValue->SetLabel(GetBinaryString(registers.SP) + " [0x" + GetHexString(registers.SP) + "]");
 
         PCValue->SetLabel(GetBinaryString(registers.PC) + " [0x" + GetHexString(registers.PC) + "]");
+    }
+
+
+    wxString Registers::GetFlagsString(uint8_t val) {
+        std::string str;
+
+        str += (val & 1 << 7) > 0 ? "Z" : "-";
+        str += (val & 1 << 6) > 0 ? "N" : "-";
+        str += (val & 1 << 5) > 0 ? "H" : "-";
+        str += (val & 1 << 4) > 0 ? "C" : "-";
+
+        wxString result(str);
+        return result;
     }
 }
