@@ -5,10 +5,11 @@
 #ifndef GBEMU_APPLICATION_H
 #define GBEMU_APPLICATION_H
 
+#include <wx/app.h>
 
 #include "global.h"
-#include "Windows/MainWindow.h"
-#include "Emu/Bus.h"
+#include "Windows/Windows.h"
+#include "Emu/GbBus.h"
 
 class Application: public wxApp
 {
@@ -16,12 +17,12 @@ public:
     virtual bool OnInit();
 
     Windows::Main * MainWindow;
+    Windows::Registers * RegistersWindow;
 
-    std::unique_ptr<Emulator::Bus> EmulatorBus;
+    std::unique_ptr<Emulator::GbBus> EmulatorBus;
 
 
 };
 
 Application &GetApp();
-
 #endif //GBEMU_APPLICATION_H
