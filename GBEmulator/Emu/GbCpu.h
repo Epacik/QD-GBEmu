@@ -2,11 +2,16 @@
 #ifndef CPU_H
 #define CPU_H
 
+
+
 #include <queue>
 #include <functional>
 
 #include "GbBus.h"
 #include "CpuRegisters.h"
+#include "Instruction.h"
+
+
 
 namespace Emulator
 {
@@ -35,13 +40,20 @@ namespace Emulator
 		uint8_t Read(uint16_t address);
 
         uint8_t GetInterruptFlags();
+        void SetInterruptFlags(Interrupts val);
+        void SetInterruptFlags(uint8_t val);
 
         bool InterruptMasterEnable = true; // false if executing an interrupt handler
         bool Halt = false;
         bool Stop = false;
+        uint16_t TempData = 0x0000;
 
+        void StackPush(uint16_t value);
         void StackPush(uint8_t value);
+        uint16_t StackPop16();
         uint8_t StackPop();
+
+
 
         void PrepareForInterrupt();
 
@@ -66,7 +78,17 @@ namespace Emulator
 
 		void OnClockCycle();
 
+	private:
+        void SetOpcodes();
+
+        //Opcodes
+        std::unordered_map<uint8_t, Opcode> Opcodes;
+        std::unordered_map<uint8_t, Opcode> Opcodes16b;
+
 	};
+
+
+
 }
 
 

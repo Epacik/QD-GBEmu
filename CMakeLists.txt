@@ -9,3 +9,4 @@ project ("GBEmu")
 
 # Uwzględnij podprojekty.
 add_subdirectory ("GBEmulator")
+add_subdirectory ("GBEmulatorTests")

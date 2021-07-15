@@ -3,6 +3,9 @@
 
 class Application;
 namespace Emulator {
+    GbBus::GbBus(bool stop) : GbBus() {
+        Clock.Stop();
+    }
     GbBus::GbBus() {
 
         // Reset values in devices connected to the GbBus
@@ -30,7 +33,7 @@ namespace Emulator {
         Cpu->Connect(this);
 
         Clock.OnClockCycle = std::make_shared<std::function<void()>>([this] {
-            Cpu->Registers.PC += 1;
+            Cpu->OnClockCycle();
 
 
             //App
@@ -124,6 +127,8 @@ namespace Emulator {
     void GbBus::SetOnRefreshUI(std::shared_ptr<std::function<void()>> func) {
         OnRefreshUI = func;
     }
+
+
 
 
 }

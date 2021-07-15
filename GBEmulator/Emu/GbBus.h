@@ -20,6 +20,7 @@ namespace Emulator {
 	{
 	public:
         GbBus();
+        GbBus(bool stopClock);
 
 		~GbBus();
 
@@ -49,7 +50,7 @@ namespace Emulator {
         std::array<uint8_t, 0x007F> IORegisters{};                   // 0xFF00 -> 0xFF7F
         std::array<uint8_t, 0x007F> HighRam{};                       // 0xFF80 -> 0xFFFE
 
-        uint8_t                     InterruptEnableRegister = 0x00;  // 0xFFFF
+        uint8_t                     InterruptEnableRegister = 0xFF;  // 0xFFFF
 
 	public:
 		void Write(uint16_t address, uint8_t data);
