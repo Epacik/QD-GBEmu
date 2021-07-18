@@ -16,6 +16,7 @@ public:
     ~GbClock();
 
     void Stop();
+    void Start();
     std::shared_ptr<std::function<void()>> OnClockCycle = nullptr;
 
 private:

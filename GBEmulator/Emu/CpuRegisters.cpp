@@ -43,7 +43,7 @@ namespace Emulator {
     }
 
     void CpuRegisters::SetBC(uint16_t data) {
-        C  = (uint8_t)(data & 0xf0);
+        C  = (uint8_t)(data & 0xff);
         B = (uint8_t)((data & 0xff00) >> 8);
     }
 
@@ -68,7 +68,7 @@ namespace Emulator {
     }
 
     void CpuRegisters::SetDE(uint16_t data) {
-        E  = (uint8_t)(data & 0xf0);
+        E  = (uint8_t)(data & 0xff);
         D = (uint8_t)((data & 0xff00) >> 8);
     }
 
@@ -94,7 +94,7 @@ namespace Emulator {
     }
 
     void CpuRegisters::SetHL(uint16_t data) {
-        L  = (uint8_t)(data & 0xf0);
+        L  = (uint8_t)(data & 0xff);
         H = (uint8_t)((data & 0xff00) >> 8);
     }
 
@@ -104,5 +104,21 @@ namespace Emulator {
 
     void CpuRegisters::SetL(uint8_t data) {
         L = data & 0xF0;
+    }
+
+    void CpuRegisters::SetSP(uint16_t data) {
+        SP = data;
+    }
+
+    void CpuRegisters::SetPC(uint16_t data) {
+        PC = data;
+    }
+
+    uint16_t CpuRegisters::GetSP() {
+        return SP;
+    }
+
+    uint16_t CpuRegisters::GetPC() {
+        return PC;
     }
 }

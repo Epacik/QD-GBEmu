@@ -20,17 +20,14 @@ namespace Emulator {
             PrepareForInterrupt();
         }
         else if(ExecutionSteps.empty()){
-            Opcodes[Read(Registers.PC)].Exec();
+            Opcodes[Fetch()].Exec();
         }
 
 
         if (!ExecutionSteps.empty()) {
-            Registers.PC++;
+            //Registers.PC++;
             ExecutionSteps.front()();
             ExecutionSteps.pop();
-        }
-        else {
-            Registers.PC++;
         }
 
     }
@@ -54,8 +51,8 @@ namespace Emulator {
         //one step per clock cycle
         ExecutionSteps.push([]{/*NOP*/});
         ExecutionSteps.push([]{/*NOP*/});
-        ExecutionSteps.push([this]{ TempData = Registers.PC; });
-        ExecutionSteps.push([this] { StackPush(TempData); });
+        ExecutionSteps.push([this]{ Fetched = Registers.PC; });
+        ExecutionSteps.push([this] { StackPush(Fetched); });
         ExecutionSteps.push([this] {
             auto intrps = GetInterruptFlags() & Bus->InterruptEnableRegister;
 
@@ -107,7 +104,7 @@ namespace Emulator {
     }
 
     bool GbCpu::IsFlagSet(GbCpu::Flags flag) {
-        return (Registers.FlagsState & flag);
+        return (Registers.FlagsState & flag) > 0;
     }
 
     uint8_t GbCpu::GetInterruptFlags() {
@@ -147,27 +144,13 @@ namespace Emulator {
     }
 
 
-
-    void GbCpu::SetOpcodes() {
-        Opcodes[0x00] = {"NOP", [this]{ ExecutionSteps.push([]{}); }};
-
-        Opcodes[0x01] =  {
-                "LD BC,",
-                [this] {
-            ExecutionSteps.push([this] { TempData = (uint16_t)Read(Registers.PC); });
-            ExecutionSteps.push([this] { TempData =  TempData | ((uint16_t)Read(Registers.PC)) << 8; });
-            ExecutionSteps.push([this] { Registers.SetBC(TempData); });
-        },
-                [this] {
-             return "";//Tools::StringConverters::GetHexString(Read(Registers.PC + 2)) +
-                    //Tools::StringConverters::GetHexString(Read(Registers.PC + 1));
-        }};
-
-        Opcodes[0x02] = {"LD (BC), A", [this]{
-            ExecutionSteps.push([this]{ TempData = Registers.GetBC(); });
-            ExecutionSteps.push([this]{ Write(TempData, Registers.Accumulator);});
-        }};
+    uint8_t GbCpu::Fetch() {
+        return Read(Registers.PC++);
     }
+
+
+
+
 
 
 }

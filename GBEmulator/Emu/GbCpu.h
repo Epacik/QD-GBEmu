@@ -46,13 +46,15 @@ namespace Emulator
         bool InterruptMasterEnable = true; // false if executing an interrupt handler
         bool Halt = false;
         bool Stop = false;
-        uint16_t TempData = 0x0000;
+        uint16_t Fetched  = 0x0000;
+        uint16_t Fetched2 = 0x0000;
 
         void StackPush(uint16_t value);
         void StackPush(uint8_t value);
         uint16_t StackPop16();
         uint8_t StackPop();
 
+        uint8_t Fetch();
 
 
         void PrepareForInterrupt();
@@ -84,6 +86,13 @@ namespace Emulator
         //Opcodes
         std::unordered_map<uint8_t, Opcode> Opcodes;
         std::unordered_map<uint8_t, Opcode> Opcodes16b;
+
+//        template<type T>
+//        void SetDoubleRegisterToImmediateData(){
+//            ExecutionSteps.push([this] { Fetched = (uint16_t)Fetch(); });
+//            ExecutionSteps.push([this] { Fetched = Fetched | ((uint16_t)Fetch()) << 8; });
+//            ExecutionSteps.push([this] { T(Fetched); });
+//        }
 
 	};
 

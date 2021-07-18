@@ -57,6 +57,10 @@ namespace Emulator {
         uint8_t H = 0x01;
         uint8_t L = 0x4D;
 
+        void SetSP(uint16_t data);
+        uint16_t GetSP();
+        void SetPC(uint16_t data);
+        uint16_t GetPC();
         uint16_t SP = 0xFFFE;
         uint16_t PC = 0x0100;
 

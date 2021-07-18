@@ -34,5 +34,9 @@ void GbClock::Stop() {
     stopped = true;
 }
 
+void GbClock::Start() {
+    stopped = false;
+}
+
 
 GbClock::~GbClock() = default;

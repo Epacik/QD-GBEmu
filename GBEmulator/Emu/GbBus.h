@@ -55,6 +55,9 @@ namespace Emulator {
 	public:
 		void Write(uint16_t address, uint8_t data);
 		uint8_t Read(uint16_t address, bool readonly);
+		uint8_t Read(uint16_t address){
+		    return Read(address, false);
+		}
 
 
 	};
