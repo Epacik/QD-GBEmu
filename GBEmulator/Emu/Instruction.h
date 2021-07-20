@@ -12,9 +12,9 @@
 namespace Emulator{
     struct Opcode {
     public:
-        wxString Name;
+        wxString Name = "";
         std::function<void()> Exec;
-        std::function<wxString()> DisassemblyText = []{return "";};
+        std::function<wxString()> FormatText = [this]{ return Name; };
     };
 }
 
