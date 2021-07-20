@@ -1,9 +1,8 @@
 #define CATCH_CONFIG_MAIN // provides main(); this line is required in only one .cpp file
 #include "ThirdParty/Catch/catch.hpp"
 
-#include "Cpu/Opcodes/Tools.h"
-#include "Cpu/Opcodes/00_0F.h"
-#include "Cpu/Opcodes/Jumps.h"
+#include "Cpu/Opcodes.h"
+
 
 
 
@@ -150,48 +149,238 @@ TEST_CASE( "Cpu", "[GameboyTests]" ) {
             CHECK( Bus.Cpu->Registers.GetSP() == 0x0014 );
             ExecIncDoubleRegister(0xCFE0, 0x0014, "sp");
             CHECK( Bus.Cpu->Registers.GetSP() == 0x0015 );
-        }    }
-
-    SECTION("INC B") {
-        using namespace Emulator;
-        ExecIncRegister(0xC230, 0b00001111);
-        CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
-        CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
-        CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
-        CHECK(       Bus.Cpu->Registers.GetB() == 0b00010000);
-
-        ExecIncRegister(0xC230, 0xFF);
-        CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
-        CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
-        CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
-        CHECK(       Bus.Cpu->Registers.GetB() == 0b00000000);
+        }
     }
-    SECTION("DEC B") {
+
+    SECTION("Increment registers"){
+        SECTION("INC B") {
+            using namespace Emulator;
+            ExecIncRegister(0xC230, 0b00001111);
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetB() == 0b00010000);
+
+            ExecIncRegister(0xC230, 0xFF);
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetB() == 0b00000000);
+        }
+
+        SECTION("INC D") {
+            using namespace Emulator;
+            ExecIncRegister(0xC230, 0b00001111, "d");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetD() == 0b00010000);
+
+            ExecIncRegister(0xC230, 0xFF, "d");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetD() == 0b00000000);
+        }
+
+        SECTION("INC H") {
+            using namespace Emulator;
+            ExecIncRegister(0xC230, 0b00001111, "h");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetH() == 0b00010000);
+
+            ExecIncRegister(0xC230, 0xFF, "h");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetH() == 0b00000000);
+        }
+    }
+
+    SECTION("Inc Memory"){
         using namespace Emulator;
-        ExecDecB(0xC230, 0b00001111);
+        ExecIncMemAtAt(0xC230, 0xCCCF, 0b00001111);
+        CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+        CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+        CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+        CHECK(       Bus.Read(0xCCCF) == 0b00010000);
+    }
+
+    SECTION("Decrement register"){
+
+        SECTION("DEC B") {
+            using namespace Emulator;
+            ExecDecRegister(0xC230, 0b00001111);
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetB() == 0b00001110);
+
+            ExecDecRegister(0xC230, 0xFF);
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetB() == 0b11111110);
+
+            ExecDecRegister(0xC230, 0b11110000);
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetB() == 0b11101111);
+
+            ExecDecRegister(0xC230, 1);
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(Bus.Cpu->Registers.GetB() == 0b00000000);
+        }
+
+        SECTION("DEC D") {
+            using namespace Emulator;
+            ExecDecRegister(0xC230, 0b00001111, "d");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetD() == 0b00001110);
+
+            ExecDecRegister(0xC230, 0xFF, "d");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetD() == 0b11111110);
+
+            ExecDecRegister(0xC230, 0b11110000, "d");
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetD() == 0b11101111);
+
+            ExecDecRegister(0xC230, 1, "d");
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(Bus.Cpu->Registers.GetD() == 0b00000000);
+        }
+
+        SECTION("DEC H") {
+            using namespace Emulator;
+            ExecDecRegister(0xC230, 0b00001111, "h");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetH() == 0b00001110);
+
+            ExecDecRegister(0xC230, 0xFF, "h");
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetH() == 0b11111110);
+
+            ExecDecRegister(0xC230, 0b11110000, "h");
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(       Bus.Cpu->Registers.GetH() == 0b11101111);
+
+            ExecDecRegister(0xC230, 1, "h");
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+            CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+            CHECK(Bus.Cpu->Registers.GetH() == 0b00000000);
+        }
+    }
+
+    SECTION("dec Memory"){
+        using namespace Emulator;
+        ExecDecMemAtAt(0xC230, 0xCCCF, 0b00001111);
         CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
         CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
         CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
-        CHECK(       Bus.Cpu->Registers.GetB() == 0b00001110);
+        CHECK(       Bus.Read(0xCCCF) == 0b00001110);
 
-        ExecDecB(0xC230, 0xFF);
+        ExecDecMemAtAt(0xC230, 0xCCCF, 0xFF);
         CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
         CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
         CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
-        CHECK(       Bus.Cpu->Registers.GetB() == 0b11111110);
+        CHECK(       Bus.Read(0xCCCF) == 0b11111110);
 
-        ExecDecB(0xC230, 0b11110000);
+        ExecDecMemAtAt(0xC230, 0xCCCF, 0b11110000);
         CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
         CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
         CHECK(       Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
-        CHECK(       Bus.Cpu->Registers.GetB() == 0b11101111);
+        CHECK(       Bus.Read(0xCCCF) == 0b11101111);
 
-        ExecDecB(0xC230, 1);
-        CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
-        CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
-        CHECK(Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
-        CHECK(Bus.Cpu->Registers.GetB() == 0b00000000);
+        ExecDecMemAtAt(0xC230, 0xCCCF, 1);
+        CHECK( Bus.Cpu->IsFlagSet(GbCpu::Flags::HalfCarry));
+        CHECK( Bus.Cpu->IsFlagSet(GbCpu::Flags::Zero));
+        CHECK( Bus.Cpu->IsFlagSet(GbCpu::Flags::Subtraction));
+        CHECK( Bus.Read(0xCCCF) == 0b00000000);
     }
+
+    SECTION("Load data"){
+        SECTION("Load immediate to register"){
+            SECTION("B"){
+                ExecLoadImmDataToRegister(0xCCFC, 0x12 );
+                CHECK( Bus.Cpu->Registers.GetB() == 0x12 );
+
+                ExecLoadImmDataToRegister(0xCCFC, 0x69 );
+                CHECK( Bus.Cpu->Registers.GetB() == 0x69 );
+
+                ExecLoadImmDataToRegister(0xCCFC, 0x21 );
+                CHECK( Bus.Cpu->Registers.GetB() == 0x21 );
+            }
+
+            SECTION("D"){
+                ExecLoadImmDataToRegister(0xCCFC, 0x12, "D");
+                CHECK( Bus.Cpu->Registers.GetD() == 0x12 );
+
+                ExecLoadImmDataToRegister(0xCCFC, 0x69, "D");
+                CHECK( Bus.Cpu->Registers.GetD() == 0x69 );
+
+                ExecLoadImmDataToRegister(0xCCFC, 0x21, "D");
+                CHECK( Bus.Cpu->Registers.GetD() == 0x21 );
+            }
+
+            SECTION("H"){
+                ExecLoadImmDataToRegister(0xCCFC, 0x12, "H");
+                CHECK( Bus.Cpu->Registers.GetH() == 0x12 );
+
+                ExecLoadImmDataToRegister(0xCCFC, 0x69, "H");
+                CHECK( Bus.Cpu->Registers.GetH() == 0x69 );
+
+                ExecLoadImmDataToRegister(0xCCFC, 0x21, "H");
+                CHECK( Bus.Cpu->Registers.GetH() == 0x21 );
+            }
+        }
+    }
+
+    SECTION("Rotation"){
+        using namespace Emulator;
+        SECTION("RLCA"){
+            ExecRLCA(0xCFCF, 0b10101010 );
+            CHECK( Bus.Cpu->Registers.GetA() == 0b01010101 );
+            CHECK( Bus.Cpu->IsFlagSet(GbCpu::Flags::Carry) );
+
+            ExecRLCA(0xCFCF, 0b01010101  );
+            CHECK( Bus.Cpu->Registers.GetA() == 0b10101010 );
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Carry) );
+        }
+
+        SECTION("RLA"){
+            ExecRLA(0xCFCF, 0b10101010 );
+            CHECK( Bus.Cpu->Registers.GetA() == 0b01010100 );
+            CHECK( Bus.Cpu->IsFlagSet(GbCpu::Flags::Carry) );
+
+            Bus.Cpu->SetFlag(GbCpu::Flags::Carry);
+            ExecRLA(0xCFCF, 0b01010101 );
+
+            CHECK( Bus.Cpu->Registers.GetA() == 0b10101011 );
+            CHECK_FALSE( Bus.Cpu->IsFlagSet(GbCpu::Flags::Carry) );
+        }
+    }
+
 }
 
 TEST_CASE("Bus", "[GameboyTests]"){
