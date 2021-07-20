@@ -69,44 +69,6 @@ namespace Cpu::Opcodes {
 //        Bus.Cpu->OnClockCycle();
     }
 
-    void ExecIncDoubleRegister(uint16_t address, uint16_t initialValue = 0x0013, std::string reg = "bc") {
-        int opcode = 0x03;
-        reg = ToLower(reg);
-        if(reg == "de"){
-            opcode = 0x13;
-            Bus.Cpu->Registers.SetDE(initialValue);
-        }
-        else if(reg == "hl"){
-            opcode = 0x23;
-            Bus.Cpu->Registers.SetHL(initialValue);
-        }
-        else if(reg == "sp"){
-            opcode = 0x33;
-            Bus.Cpu->Registers.SetSP(initialValue);
-        }
-        else{
-            Bus.Cpu->Registers.SetBC(initialValue);
-        }
-
-        SetOpcodeAndPC(address, opcode);
-
-
-
-        RunNClockCycles(2);
-    }
-
-    void ExecIncRegister(uint16_t address, uint8_t initialValue){
-        SetOpcodeAndPC(address, 0x04);
-        Bus.Cpu->Registers.SetB(initialValue);
-        Bus.Cpu->OnClockCycle();
-    }
-
-    void ExecDecB(uint16_t address, uint8_t initialValue){
-        SetOpcodeAndPC(address, 0x05);
-        Bus.Cpu->Registers.SetB(initialValue);
-        Bus.Cpu->OnClockCycle();
-    }
-
 }
 
 

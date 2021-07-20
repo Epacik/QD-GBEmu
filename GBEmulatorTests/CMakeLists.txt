@@ -13,6 +13,6 @@ add_executable (GBEmulatorTests
         ../GBEmulator/Emu/Instruction.h ../GBEmulator/Emu/GbCpu.h ../GBEmulator/Emu/GbCpu.cpp ../GBEmulator/Emu/GbBus.h ../GBEmulator/Emu/GbBus.cpp
         ../GBEmulator/Emu/GbClock.h ../GBEmulator/Emu/GbClock.cpp ../GBEmulator/Emu/CpuRegisters.h ../GBEmulator/Emu/CpuRegisters.cpp
         ../GBEmulator/Emu/Devices/GbCartridge.h ../GBEmulator/Emu/MemoryBankControllers/MemoryBankControllerBase.h ../GBEmulator/Emu/MemoryBankControllers/MemoryBankControllerBase.cpp
-        Cpu/Opcodes/00_0F.h ../GBEmulator/Emu/GbCpuOpcodes.cpp Cpu/Opcodes/Jumps.h Cpu/Opcodes/Tools.h)
+        Cpu/Opcodes/00_0F.h ../GBEmulator/Emu/GbCpuOpcodes.cpp Cpu/Opcodes/Jumps.h Cpu/Opcodes/Tools.h Cpu/Opcodes/Increments.h Cpu/Opcodes/Decrements.h Cpu/Opcodes/Loads.h Cpu/Opcodes/Rotations.h Cpu/Opcodes.h)
 
 target_link_libraries(GBEmulatorTests ${wxWidgets_LIBRARIES})

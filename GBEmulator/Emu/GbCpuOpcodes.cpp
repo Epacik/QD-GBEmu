@@ -12,7 +12,19 @@ namespace Emulator{
         typedef uint8_t  (CpuRegisters::*GetRegisterPtr)       ();
     }
     void GbCpu::SetOpcodes() {
-
+        std::function<void(uint8_t, uint8_t)>   HalfCarryHelper  ([this](uint8_t r1, uint8_t r2){
+            if((((r1 & 0xf) + (r2 & 0xf)) & 0x10) == 0x10 ){
+                SetFlag(Flags::HalfCarry);
+            }
+            else{
+                UnsetFlag(Flags::HalfCarry);
+            }
+        });
+        std::function<void(uint16_t, uint16_t)> HalfCarryHelper16([this, HalfCarryHelper](uint16_t r1, uint16_t r2){
+            uint8_t r1u = (uint8_t)((r1 & 0xFF00) >> 8);
+            uint8_t r2u = (uint8_t)((r2 & 0xFF00) >> 8);
+            HalfCarryHelper(r1u, r2u);
+        });
 
 #pragma region  std::function templates ( or in other words, crimes against humanity )
         // I feel like that function and bindings below are crimes against humanity or something
