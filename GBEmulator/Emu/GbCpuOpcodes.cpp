@@ -37,10 +37,15 @@ namespace Emulator{
             ExecutionSteps.push([this, setRegister] { std::invoke(setRegister, Registers, Fetched); });
         });
 
-        std::function<void(GetDoubleRegisterPtr)> writeDataFromAddressToAccumulator
-        ([this] (GetDoubleRegisterPtr getRegister) {
-            ExecutionSteps.push([this, getRegister]{ Fetched = std::invoke(getRegister, Registers); });
-            ExecutionSteps.push([this]{ Write(Fetched, Registers.Accumulator);});
+        std::function<void(GetDoubleRegisterPtr, GetRegisterPtr, int, SetDoubleRegisterPtr)> writeDataFromRegisterToAddress
+        ([this] (GetDoubleRegisterPtr getRegisterAddr, GetRegisterPtr getRegister, int incrementBy, SetDoubleRegisterPtr setRegister) {
+            ExecutionSteps.push([this, getRegisterAddr]{ Fetched = std::invoke(getRegisterAddr, Registers); });
+            ExecutionSteps.push([this, getRegister, incrementBy, setRegister]{
+                Write(Fetched, std::invoke(getRegister, Registers));
+                if(incrementBy != 0) {
+                    std::invoke(setRegister, Registers, Fetched + incrementBy);
+                }
+            });
         });
 
         std::function<void(GetDoubleRegisterPtr, SetDoubleRegisterPtr)> incrementDoubleRegister
@@ -106,6 +111,17 @@ namespace Emulator{
             ExecutionSteps.push([this, setRegister]{ std::invoke(setRegister, Registers, Read(Fetched)); });
         });
 
+        std::function<void(GetDoubleRegisterPtr, SetDoubleRegisterPtr)> decrementDoubleRegister
+                ([this] (GetDoubleRegisterPtr getRegister, SetDoubleRegisterPtr setRegister) {
+                    ExecutionSteps.push([this, getRegister] { Fetched = std::invoke(getRegister, Registers); });
+                    ExecutionSteps.push([this, setRegister] { std::invoke(setRegister, Registers, Fetched - 1); });
+                });
+
+        std::function<void(GetRegisterPtr, SetRegisterPtr)> loadDataFromOneRegisterToAnother
+        ([this] (GetRegisterPtr getRegister, SetRegisterPtr setRegister){
+           ExecutionSteps.push([this, getRegister, setRegister] { std::invoke(setRegister, Registers, std::invoke(getRegister, Registers)); });
+        });
+
 #pragma endregion
 
 #pragma region 0x00 - 0x3F
@@ -140,16 +156,18 @@ namespace Emulator{
 //                    //Tools::StringConverters::GetHexString(Read(Registers.PC + 1));
 //                }};
 
-        Opcodes[0x02] = {"LD (BC), A", std::bind(writeDataFromAddressToAccumulator, &CpuRegisters::GetBC) };
-        Opcodes[0x12] = {"LD (DE), A", std::bind(writeDataFromAddressToAccumulator, &CpuRegisters::GetDE) };
-        Opcodes[0x22] = {"LD (HL+), A", [this]  {
-            ExecutionSteps.push([this]{ Fetched = Registers.GetHL(); Registers.SetHL(Fetched + 1); });
-            ExecutionSteps.push([this]{ Registers.SetA((uint8_t)Fetched); });
-        }};
-        Opcodes[0x32] = {"LD (HL-), A", [this]  {
-            ExecutionSteps.push([this]{ Fetched = Registers.GetHL(); Registers.SetHL(Fetched - 1); });
-            ExecutionSteps.push([this]{ Registers.SetA((uint8_t)Fetched); });
-        }};
+        Opcodes[0x02] = {"LD (BC), A",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetBC, &CpuRegisters::GetA,  0, nullptr) };
+        Opcodes[0x12] = {"LD (DE), A",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetDE, &CpuRegisters::GetA,  0, nullptr) };
+        Opcodes[0x22] = {"LD (HL+), A", std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetA,  1, &CpuRegisters::SetHL)};
+        Opcodes[0x32] = {"LD (HL-), A", std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetA, -1, &CpuRegisters::SetHL)};
+//        Opcodes[0x22] = {"LD (HL+), A", [this]  {
+//            ExecutionSteps.push([this]{ Fetched = Registers.GetHL(); Registers.SetHL(Fetched + 1); });
+//            ExecutionSteps.push([this]{ Registers.SetA((uint8_t)Fetched); });
+//        }};
+//        Opcodes[0x32] = {"LD (HL-), A", [this]  {
+//            ExecutionSteps.push([this]{ Fetched = Registers.GetHL(); Registers.SetHL(Fetched - 1); });
+//            ExecutionSteps.push([this]{ Registers.SetA((uint8_t)Fetched); });
+//        }};
 
         Opcodes[0x03] = { "INC BC", std::bind(incrementDoubleRegister, &CpuRegisters::GetBC, &CpuRegisters::SetBC) };
         Opcodes[0x13] = { "INC DE", std::bind(incrementDoubleRegister, &CpuRegisters::GetDE, &CpuRegisters::SetDE) };
@@ -279,6 +297,154 @@ namespace Emulator{
         Opcodes[0x0A] = {"LD A, (HL+)", std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetBC, &CpuRegisters::SetA,  1, &CpuRegisters::SetHL)};
         Opcodes[0x0A] = {"LD A, (HL=)", std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetBC, &CpuRegisters::SetA, -1, &CpuRegisters::SetHL)};
 
+        Opcodes[0x0B] = {"DEC BC", std::bind(decrementDoubleRegister, &CpuRegisters::GetBC, &CpuRegisters::SetBC)};
+        Opcodes[0x1B] = {"DEC DE", std::bind(decrementDoubleRegister, &CpuRegisters::GetDE, &CpuRegisters::SetDE)};
+        Opcodes[0x2B] = {"DEC HL", std::bind(decrementDoubleRegister, &CpuRegisters::GetHL, &CpuRegisters::SetHL)};
+        Opcodes[0x3B] = {"DEC SP", std::bind(decrementDoubleRegister, &CpuRegisters::GetSP, &CpuRegisters::SetSP)};
+
+        Opcodes[0x0C] = {"INC C", std::bind(incrementRegister, &CpuRegisters::GetC, &CpuRegisters::SetC )};
+        Opcodes[0x1C] = {"INC E", std::bind(incrementRegister, &CpuRegisters::GetE, &CpuRegisters::SetE )};
+        Opcodes[0x2C] = {"INC L", std::bind(incrementRegister, &CpuRegisters::GetL, &CpuRegisters::SetL )};
+        Opcodes[0x3C] = {"INC A", std::bind(incrementRegister, &CpuRegisters::GetA, &CpuRegisters::SetA )};
+
+        Opcodes[0x0D] = {"DEC C", std::bind(decrementRegister, &CpuRegisters::GetC, &CpuRegisters::SetC )};
+        Opcodes[0x1D] = {"DEC E", std::bind(decrementRegister, &CpuRegisters::GetE, &CpuRegisters::SetE )};
+        Opcodes[0x2D] = {"DEC L", std::bind(decrementRegister, &CpuRegisters::GetL, &CpuRegisters::SetL )};
+        Opcodes[0x3D] = {"DEC A", std::bind(decrementRegister, &CpuRegisters::GetA, &CpuRegisters::SetA )};
+
+        Opcodes[0x0E] = { "LD C,", std::bind(loadDataFromAddressToRegisterImmediate, &CpuRegisters::SetC)};
+        Opcodes[0x1E] = { "LD E,", std::bind(loadDataFromAddressToRegisterImmediate, &CpuRegisters::SetE)};
+        Opcodes[0x2E] = { "LD L,", std::bind(loadDataFromAddressToRegisterImmediate, &CpuRegisters::SetL)};
+        Opcodes[0x3E] = { "LD A,", std::bind(loadDataFromAddressToRegisterImmediate, &CpuRegisters::SetA)};
+
+        Opcodes[0x0F] = { "RRCA", [this] { ExecutionSteps.push([this]{
+            UnsetFlag(Flags::Subtraction);
+            UnsetFlag(Flags::HalfCarry);
+            uint8_t val   = Registers.GetA();
+            if(val == 0) { SetFlag(Flags::Zero); return; }
+            uint8_t carry = (val & 1);
+            val = (val >> 1) | (carry << 7);
+            Registers.SetA(val);
+            carry > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+            UnsetFlag(Flags::Zero);
+        }); }};
+        Opcodes[0x1F] = { "RRA",  [this] { ExecutionSteps.push([this]{
+            UnsetFlag(Flags::Subtraction);
+            UnsetFlag(Flags::HalfCarry);
+            uint8_t val   = Registers.GetA();
+            uint8_t carry = (val & 1);
+            bool carrySet = IsFlagSet(Flags::Carry);
+            val = (val >> 1) | ((carrySet ? 1 : 0) << 7);
+
+            Registers.SetA(val);
+
+            carry > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+            val == 0 ? SetFlag(Flags::Zero) : UnsetFlag(Flags::Zero);
+
+        }); }};
+        Opcodes[0x2F] = { "CPL",  [this] {Registers.Accumulator = ~(Registers.Accumulator); SetFlag(Flags::Subtraction); SetFlag(Flags::HalfCarry); }};
+        Opcodes[0x3F] = { "CCF",  [this] { IsFlagSet(Flags::Carry) ? UnsetFlag(Flags::Carry) : SetFlag(Flags::Carry); }};
+
 #pragma endregion
+
+#pragma region 0x40 -> 0x6F
+
+        Opcodes[0x40] = { "LD B, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetB)};
+        Opcodes[0x50] = { "LD D, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetD)};
+        Opcodes[0x60] = { "LD H, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetH)};
+
+        Opcodes[0x41] = { "LD B, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetB)};
+        Opcodes[0x51] = { "LD D, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetD)};
+        Opcodes[0x61] = { "LD H, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetH)};
+
+        Opcodes[0x42] = { "LD B, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetB)};
+        Opcodes[0x52] = { "LD D, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetD)};
+        Opcodes[0x62] = { "LD H, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetH)};
+
+        Opcodes[0x43] = { "LD B, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetB)};
+        Opcodes[0x53] = { "LD D, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetD)};
+        Opcodes[0x63] = { "LD H, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetH)};
+
+        Opcodes[0x44] = { "LD B, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetB)};
+        Opcodes[0x54] = { "LD D, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetD)};
+        Opcodes[0x64] = { "LD H, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetH)};
+
+        Opcodes[0x45] = { "LD B, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetB)};
+        Opcodes[0x55] = { "LD D, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetD)};
+        Opcodes[0x65] = { "LD H, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetH)};
+
+        Opcodes[0x46] = {"LD B, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetB,  0, nullptr)};
+        Opcodes[0x56] = {"LD D, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetD,  0, nullptr)};
+        Opcodes[0x66] = {"LD H, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetH,  0, nullptr)};
+
+        Opcodes[0x47] = { "LD B, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetB)};
+        Opcodes[0x57] = { "LD D, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetD)};
+        Opcodes[0x67] = { "LD H, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetH)};
+
+        Opcodes[0x48] = { "LD B, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetB)};
+        Opcodes[0x58] = { "LD D, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetD)};
+        Opcodes[0x68] = { "LD H, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetH)};
+
+        Opcodes[0x49] = { "LD C, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetC)};
+        Opcodes[0x59] = { "LD E, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetE)};
+        Opcodes[0x69] = { "LD L, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetL)};
+
+        Opcodes[0x4A] = { "LD C, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetC)};
+        Opcodes[0x5A] = { "LD E, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetE)};
+        Opcodes[0x6A] = { "LD L, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetL)};
+
+        Opcodes[0x4B] = { "LD C, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetC)};
+        Opcodes[0x5B] = { "LD E, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetE)};
+        Opcodes[0x6B] = { "LD L, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetL)};
+
+        Opcodes[0x4C] = { "LD C, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetC)};
+        Opcodes[0x5C] = { "LD E, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetE)};
+        Opcodes[0x6C] = { "LD L, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetL)};
+
+        Opcodes[0x4D] = { "LD C, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetC)};
+        Opcodes[0x5D] = { "LD E, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetE)};
+        Opcodes[0x6D] = { "LD L, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetL)};
+
+        Opcodes[0x4E] = {"LD C, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetC,  0, nullptr)};
+        Opcodes[0x5E] = {"LD E, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetE,  0, nullptr)};
+        Opcodes[0x6E] = {"LD L, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetL,  0, nullptr)};
+
+        Opcodes[0x4F] = { "LD C, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetC)};
+        Opcodes[0x5F] = { "LD E, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetE)};
+        Opcodes[0x6F] = { "LD L, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetL)};
+
+#pragma endregion
+
+#pragma  region 0x70 -> 0x75
+
+        Opcodes[0x70] = {"LD (HL), B",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetB,  0, nullptr) };
+        Opcodes[0x71] = {"LD (HL), C",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetC,  0, nullptr) };
+        Opcodes[0x72] = {"LD (HL), D",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetD,  0, nullptr) };
+        Opcodes[0x73] = {"LD (HL), E",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetE,  0, nullptr) };
+        Opcodes[0x74] = {"LD (HL), H",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetH,  0, nullptr) };
+        Opcodes[0x75] = {"LD (HL), L",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetL,  0, nullptr) };
+
+#pragma  endregion
+
+        //TODO: do the halt Opcode
+        Opcodes[0x76] = { "HALT", [this]{} };
+
+#pragma region 0x77 -> 0x7F
+
+        Opcodes[0x77] = {"LD (HL), A",  std::bind(writeDataFromRegisterToAddress, &CpuRegisters::GetHL, &CpuRegisters::GetA,  0, nullptr) };
+
+        Opcodes[0x78] = { "LD A, B", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetB, &CpuRegisters::SetA)};
+        Opcodes[0x79] = { "LD A, C", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetC, &CpuRegisters::SetA)};
+        Opcodes[0x7A] = { "LD A, D", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetD, &CpuRegisters::SetA)};
+        Opcodes[0x7B] = { "LD A, E", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetE, &CpuRegisters::SetA)};
+        Opcodes[0x7C] = { "LD A, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetA)};
+        Opcodes[0x7D] = { "LD A, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetA)};
+
+        Opcodes[0x7E] = {"LD A, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetA,  0, nullptr)};
+
+        Opcodes[0x7F] = { "LD A, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetA)};
+
+#pragma endregion
+
     }
 }
