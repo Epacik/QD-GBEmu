@@ -122,6 +122,35 @@ namespace Emulator{
            ExecutionSteps.push([this, getRegister, setRegister] { std::invoke(setRegister, Registers, std::invoke(getRegister, Registers)); });
         });
 
+        std::function<void(GetRegisterPtr)> addRegisterToAccumulator
+        ([this, HalfCarryHelper](GetRegisterPtr getRegister){
+           ExecutionSteps.push([this, getRegister, HalfCarryHelper]{
+               uint8_t reg = std::invoke(getRegister, Registers);
+               UnsetFlag(Flags::Subtraction);
+               HalfCarryHelper(reg, Registers.Accumulator);
+               uint16_t result = (uint16_t)reg + (uint16_t)Registers.Accumulator;
+               Registers.SetA((uint8_t)result & 0xFF);
+
+               (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+               (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
+           });
+        });
+
+        std::function<void(GetRegisterPtr)> addRegisterAndCarryToAccumulator
+                ([this, HalfCarryHelper](GetRegisterPtr getRegister){
+                    ExecutionSteps.push([this, getRegister, HalfCarryHelper]{
+                        uint8_t reg = std::invoke(getRegister, Registers);
+                        UnsetFlag(Flags::Subtraction);
+                        uint8_t carryVal = IsFlagSet(Flags::Carry) ? 1 : 0;
+                        HalfCarryHelper(reg, Registers.Accumulator + carryVal);
+                        uint16_t result = (uint16_t)reg + (uint16_t)Registers.Accumulator + (uint16_t)carryVal;
+                        Registers.SetA((uint8_t)result & 0xFF);
+
+                        (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                        (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
+                    });
+                });
+
 #pragma endregion
 
 #pragma region 0x00 - 0x3F
@@ -440,9 +469,61 @@ namespace Emulator{
         Opcodes[0x7C] = { "LD A, H", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetH, &CpuRegisters::SetA)};
         Opcodes[0x7D] = { "LD A, L", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetL, &CpuRegisters::SetA)};
 
-        Opcodes[0x7E] = {"LD A, (HL)",  std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetA,  0, nullptr)};
+        Opcodes[0x7E] = {"LD A, (HL)", std::bind(loadDataToRegisterByAddressInRegisterPair, &CpuRegisters::GetHL, &CpuRegisters::SetA,  0, nullptr)};
 
         Opcodes[0x7F] = { "LD A, A", std::bind(loadDataFromOneRegisterToAnother, &CpuRegisters::GetA, &CpuRegisters::SetA)};
+
+#pragma endregion
+
+#pragma region 0x80 -> 0xBF
+
+        Opcodes[0x80] = { "ADD A,B", std::bind(addRegisterToAccumulator, &CpuRegisters::GetB) };
+        Opcodes[0x81] = { "ADD A,C", std::bind(addRegisterToAccumulator, &CpuRegisters::GetC) };
+        Opcodes[0x82] = { "ADD A,D", std::bind(addRegisterToAccumulator, &CpuRegisters::GetD) };
+        Opcodes[0x83] = { "ADD A,E", std::bind(addRegisterToAccumulator, &CpuRegisters::GetE) };
+        Opcodes[0x84] = { "ADD A,H", std::bind(addRegisterToAccumulator, &CpuRegisters::GetH) };
+        Opcodes[0x85] = { "ADD A,L", std::bind(addRegisterToAccumulator, &CpuRegisters::GetL) };
+
+        Opcodes[0x86] = { "ADD A, (HL)", [this, HalfCarryHelper]{
+            ExecutionSteps.push([this] {Fetched = Registers.GetHL(); });
+            ExecutionSteps.push([this, HalfCarryHelper] {
+                int8_t reg = Read(Fetched);
+                UnsetFlag(Flags::Subtraction);
+                HalfCarryHelper(reg, Registers.Accumulator);
+                uint16_t result = (uint16_t)reg + (uint16_t)Registers.Accumulator;
+                Registers.SetA((uint8_t)result & 0xFF);
+
+                (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)       : UnsetFlag(Flags::Zero);
+            });
+        }};
+
+        Opcodes[0x87] = { "ADD A,A", std::bind(addRegisterToAccumulator, &CpuRegisters::GetA) };
+
+        Opcodes[0x88] = { "ADC A,B", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetB) };
+        Opcodes[0x89] = { "ADC A,C", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetC) };
+        Opcodes[0x8A] = { "ADC A,D", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetD) };
+        Opcodes[0x8B] = { "ADC A,E", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetE) };
+        Opcodes[0x8C] = { "ADC A,H", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetH) };
+        Opcodes[0x8D] = { "ADC A,L", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetL) };
+
+        Opcodes[0x8E] = { "ADC A, (HL)", [this, HalfCarryHelper]{
+            ExecutionSteps.push([this] {Fetched = Registers.GetHL(); });
+            ExecutionSteps.push([this, HalfCarryHelper] {
+                int8_t reg = Read(Fetched);
+                UnsetFlag(Flags::Subtraction);
+
+                uint8_t carryVal = IsFlagSet(Flags::Carry) ? 1 : 0;
+                HalfCarryHelper(reg, Registers.Accumulator + carryVal);
+                uint16_t result = (uint16_t)reg + (uint16_t)Registers.Accumulator + (uint16_t)carryVal;
+                Registers.SetA((uint8_t)result & 0xFF);
+
+                (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)       : UnsetFlag(Flags::Zero);
+            });
+        }};
+
+        Opcodes[0x8F] = { "ADC A,A", std::bind(addRegisterAndCarryToAccumulator, &CpuRegisters::GetA) };
 
 #pragma endregion
 
