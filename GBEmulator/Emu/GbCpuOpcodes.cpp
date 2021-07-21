@@ -654,14 +654,12 @@ namespace Emulator{
             ExecutionSteps.push([this] {Fetched = Registers.GetHL(); });
             ExecutionSteps.push([this, HalfCarryHelper] {
                 int8_t reg = Read(Fetched);
-                SetFlag(Flags::Subtraction);
+                uint16_t result = (uint16_t)Registers.Accumulator & (uint16_t)reg;
+                Registers.SetA((uint8_t)result ^ 0xFF);
 
-                uint8_t carryVal = IsFlagSet(Flags::Carry) ? 1 : 0;
-                HalfCarryHelper(reg, Registers.Accumulator - carryVal);
-                uint16_t result = (uint16_t)Registers.Accumulator - (uint16_t)reg - (uint16_t)carryVal;
-                Registers.SetA((uint8_t)result & 0xFF);
-
-                (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                UnsetFlag(Flags::Subtraction);
+                UnsetFlag(Flags::HalfCarry);
+                UnsetFlag(Flags::Carry);
                 (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
             });
         }};
