@@ -1,1 +1,1 @@
-# Quick and Dirty - GameBoy Emulator
+# Quick and Dirty GameBoy Emulator
