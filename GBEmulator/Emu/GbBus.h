@@ -16,29 +16,29 @@ class Application;
 
 namespace Emulator {
     class GbCpu;
-	class GbBus
-	{
-	public:
+    class GbBus
+    {
+    public:
         GbBus();
         GbBus(bool stopClock);
 
-		~GbBus();
+        ~GbBus();
 
-		void SetOnRefreshUI(std::shared_ptr<std::function<void()>> func);
+        void SetOnRefreshUI(std::shared_ptr<std::function<void()>> func);
 
     private :
-	    bool BootCompleted = false;
+        bool BootCompleted = false;
 
         std::shared_ptr<std::function<void()>> OnRefreshUI = nullptr;
 
     public: //devices
-	    GbClock Clock {1024};
+        GbClock Clock {1024};
 
-		std::unique_ptr<Emulator::GbCpu> Cpu;
+        std::unique_ptr<Emulator::GbCpu> Cpu;
 
-		std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF
+        std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF
 
-		std::unique_ptr<GbCartridge> Cartridge = nullptr;            // 0x0000 -> 0x7FFF
+        std::unique_ptr<GbCartridge> Cartridge = nullptr;            // 0x0000 -> 0x7FFF
 //        std::array<uint8_t, 0x3FFF> GameRom0;
 //        std::array<uint8_t, 0x3FFF> GameRomX;
 
@@ -52,14 +52,14 @@ namespace Emulator {
 
         uint8_t                     InterruptEnableRegister = 0xFF;  // 0xFFFF
 
-	public:
-		void Write(uint16_t address, uint8_t data);
-		uint8_t Read(uint16_t address, bool readonly);
-		uint8_t Read(uint16_t address){
-		    return Read(address, false);
-		}
+    public:
+        void Write(uint16_t address, uint8_t data);
+        uint8_t Read(uint16_t address, bool readonly);
+        uint8_t Read(uint16_t address){
+            return Read(address, false);
+        }
 
 
-	};
+    };
 }
 #endif // !BUS_H

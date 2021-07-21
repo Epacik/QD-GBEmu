@@ -4,16 +4,16 @@
 
 
 namespace Emulator {
-	GbCpu::GbCpu()
-	{
-        SetOpcodes();
-	}
+    GbCpu::GbCpu()
+    {
+    SetOpcodes();
+    }
 
-	GbCpu::~GbCpu() = default;
+    GbCpu::~GbCpu() = default;
 
-	void GbCpu::Connect(Emulator::GbBus* bus) {
-        this->Bus = bus;
-	}
+    void GbCpu::Connect(Emulator::GbBus* bus) {
+    this->Bus = bus;
+    }
 
     void GbCpu::OnClockCycle() {
         if(InterruptMasterEnable && ExecutionSteps.empty() && ((GetInterruptFlags() & Bus->InterruptEnableRegister) > 0)) {
@@ -81,19 +81,19 @@ namespace Emulator {
     }
 
 
-	void GbCpu::Write(uint16_t address, uint8_t data)
-	{
-	    if(Bus != nullptr)
-		    Bus->Write(address, data);
-	}
+        void GbCpu::Write(uint16_t address, uint8_t data)
+        {
+            if(Bus != nullptr)
+                    Bus->Write(address, data);
+        }
 
-	uint8_t GbCpu::Read(uint16_t address)
-	{
-	    if(Bus != nullptr)
-		    return Bus->Read(address, false);
+        uint8_t GbCpu::Read(uint16_t address)
+        {
+            if(Bus != nullptr)
+                    return Bus->Read(address, false);
 
-	    return 0x00;
-	}
+            return 0x00;
+        }
 
 
     void GbCpu::SetFlag(GbCpu::Flags flag){
@@ -116,15 +116,15 @@ namespace Emulator {
     inline void GbCpu::SetInterruptFlags(uint8_t val){
         auto curVal = GetInterruptFlags();
         Write(0xFF0F, curVal & val);
-	}
+        }
 
 
 
 
 
     void GbCpu::StackPush(uint16_t value) {
-	    auto high = (uint8_t)((value & 0xFF00) >> 8);
-	    auto low = (uint8_t)(value & 0xFF);
+            auto high = (uint8_t)((value & 0xFF00) >> 8);
+            auto low = (uint8_t)(value & 0xFF);
         Write(--Registers.SP, low);
         Write(--Registers.SP, high);
     }
@@ -147,10 +147,5 @@ namespace Emulator {
     uint8_t GbCpu::Fetch() {
         return Read(Registers.PC++);
     }
-
-
-
-
-
 
 }

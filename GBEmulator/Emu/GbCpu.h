@@ -15,15 +15,15 @@
 
 namespace Emulator
 {
-	class GbBus;
+        class GbBus;
 
-	class GbCpu
-	{
-	public:
-		GbCpu();
-		~GbCpu();
+        class GbCpu
+        {
+        public:
+                GbCpu();
+                ~GbCpu();
 
-		void Connect(GbBus* bus);
+                void Connect(GbBus* bus);
 
         enum class Interrupts {
             VerticalBlankInterrupt = 1,
@@ -33,11 +33,11 @@ namespace Emulator
             JoypadInterrupt        = 1 << 4,
         };
 
-	private:
-		GbBus* Bus = nullptr;
+        private:
+                GbBus* Bus = nullptr;
 
-		void Write(uint16_t address, uint8_t data);
-		uint8_t Read(uint16_t address);
+                void Write(uint16_t address, uint8_t data);
+                uint8_t Read(uint16_t address);
 
         uint8_t GetInterruptFlags();
         void SetInterruptFlags(Interrupts val);
@@ -62,25 +62,25 @@ namespace Emulator
         // contains steps required for an instruction to work
         std::queue<std::function<void()>> ExecutionSteps;
 
-	public:
-		enum Flags {
-			Zero        = (1 << 7),
-			Subtraction = (1 << 6), // BCD
-			HalfCarry   = (1 << 5), // BCD
-			Carry       = (1 << 4),
-		};
+        public:
+                enum Flags {
+                        Zero        = (1 << 7),
+                        Subtraction = (1 << 6), // BCD
+                        HalfCarry   = (1 << 5), // BCD
+                        Carry       = (1 << 4),
+                };
 
         CpuRegisters Registers;
 
-		void SetFlag(Flags flag);
-		void UnsetFlag(Flags flag);
+                void SetFlag(Flags flag);
+                void UnsetFlag(Flags flag);
 
-		bool IsFlagSet(Flags flag);
+                bool IsFlagSet(Flags flag);
 
 
-		void OnClockCycle();
+                void OnClockCycle();
 
-	private:
+        private:
         void SetOpcodes();
 
         //Opcodes
@@ -94,7 +94,7 @@ namespace Emulator
 //            ExecutionSteps.push([this] { T(Fetched); });
 //        }
 
-	};
+        };
 
 
 
