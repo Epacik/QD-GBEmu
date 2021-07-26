@@ -27,6 +27,7 @@ namespace Windows {
 
         void OnOpenRegistersWindow(wxCommandEvent &event);
 
+        void OnOpenMemoryWindow(wxCommandEvent &event);
 
         void CreateMenuBar();
 

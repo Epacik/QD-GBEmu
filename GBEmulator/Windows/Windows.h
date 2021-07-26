@@ -8,8 +8,10 @@
 namespace Windows{
     class Main;
     class Registers;
+    class Memory;
 }
 #include "MainWindow.h"
 #include "Registers.h"
+#include "Memory.h"
 
 #endif //GBEMU_WINDOWS_H

@@ -22,6 +22,7 @@ public:
     std::unique_ptr<Emulator::GbBus> EmulatorBus;
 
 
+    Windows::Memory *MemoryWindow;
 };
 
 Application &GetApp();

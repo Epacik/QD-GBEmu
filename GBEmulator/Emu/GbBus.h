@@ -31,9 +31,12 @@ namespace Emulator {
 
         std::shared_ptr<std::function<void()>> OnRefreshUI = nullptr;
 
-    public: //devices
-        GbClock Clock {1024};
+        uint16_t clockCycle = 0;
 
+    public: //devices
+        GbClock Clock {4};
+
+        void HangTheWholeEmulator();
         std::unique_ptr<Emulator::GbCpu> Cpu;
 
         std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF

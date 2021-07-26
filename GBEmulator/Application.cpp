@@ -20,8 +20,8 @@ bool Application::OnInit()
             CallAfter([this]{
                 RegistersWindow->UpdateValues();
             });
-
         }
+
     }));
     return true;
 }

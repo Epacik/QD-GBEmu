@@ -13,12 +13,13 @@ namespace Windows {
     enum class MenuItems {
         Hello = 1,
         Registers = 1 << 1,
-
+        Memory = 1 << 2,
     };
 
     wxBEGIN_EVENT_TABLE(Main, wxFrame)
         EVT_MENU((int)MenuItems::Hello,     Main::OnHello)
         EVT_MENU((int)MenuItems::Registers, Main::OnOpenRegistersWindow)
+        EVT_MENU((int)MenuItems::Memory, Main::OnOpenRegistersWindow)
         EVT_MENU(wxID_EXIT,                       Main::OnExit)
         EVT_MENU(wxID_ABOUT,                      Main::OnAbout)
     wxEND_EVENT_TABLE()
@@ -60,6 +61,20 @@ namespace Windows {
 
     }
 
+    void Main::OnOpenMemoryWindow(wxCommandEvent &event) {
+        // wxLogMessage("Opening registers window");
+
+        if(App->MemoryWindow == nullptr){
+            auto regWindow = new Windows::Registers(wxPoint(50, 50));
+            regWindow->Show(true);
+            return;
+        }
+
+        App->MemoryWindow->SetFocus();
+        App->MemoryWindow->Show(true);
+
+    }
+
     void Main::CreateMenuBar() {
         // File
         auto fileMenu = new wxMenu;
@@ -71,6 +86,7 @@ namespace Windows {
          
         // Windows
         auto debugMenu = new wxMenu;
+        debugMenu->Append((int)MenuItems::Registers, "Registers", "Displays current state of registers");
         debugMenu->Append((int)MenuItems::Registers, "Registers", "Displays current state of registers");
 
         // Help

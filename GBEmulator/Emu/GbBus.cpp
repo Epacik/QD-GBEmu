@@ -6,6 +6,9 @@ namespace Emulator {
     GbBus::GbBus(bool stop) : GbBus() {
         Clock.Stop();
     }
+
+
+
     GbBus::GbBus() {
 
         // Reset values in devices connected to the GbBus
@@ -32,16 +35,22 @@ namespace Emulator {
         Cpu = std::make_unique<GbCpu>();
         Cpu->Connect(this);
 
+        uint32_t clockNum = 0;
+
         Clock.OnClockCycle = std::make_shared<std::function<void()>>([this] {
-            Cpu->OnClockCycle();
+            if(clockCycle % 4 == 0)
+                Cpu->OnClockCycle();
 
 
             //App
             if(OnRefreshUI != nullptr){
                 (*OnRefreshUI)();
             }
+            clockCycle++;
         });
     }
+
+
 
 
     GbBus::~GbBus() {
@@ -88,7 +97,7 @@ namespace Emulator {
             return BootROM[address];
         }
         else if (address >= 0x0000 && address <= 0x7FFF) {
-            return Cartridge != nullptr ? Cartridge->Read(address) : 0xFF;
+            return Cartridge != nullptr ? Cartridge->Read(address) : 0x00;//0xFF;
         }
         else
         if (address >= 0x8000 && address <= 0x9FFF) {
@@ -128,7 +137,7 @@ namespace Emulator {
         OnRefreshUI = func;
     }
 
+    void GbBus::HangTheWholeEmulator() {
 
-
-
+    }
 }
