@@ -63,6 +63,8 @@ namespace Emulator
         int InstructionsToResetIME = -1;
         int InstructionsToSetIME = -1;
 
+        bool IMEBack = falseh;
+
 
     public:
         enum Flags {

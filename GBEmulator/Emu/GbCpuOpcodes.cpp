@@ -11,6 +11,7 @@ namespace Emulator{
         typedef void     (CpuRegisters::*SetRegisterPtr)       (uint8_t data);
         typedef uint8_t  (CpuRegisters::*GetRegisterPtr)       ();
     }
+    
     void GbCpu::SetOpcodes() {
         std::function<void(uint8_t, uint8_t)>   HalfCarryHelper  ([this](uint8_t r1, uint8_t r2){
             if((((r1 & 0xf) + (r2 & 0xf)) & 0x10) == 0x10 ){
@@ -925,6 +926,113 @@ namespace Emulator{
             ExecutionSteps.push([]{});
             ExecutionSteps.push([this]{ Registers.SetHL(Fetched); });
         } };
+
+        Opcodes[0xC9] = { "RET", [this]{
+            ExecutionSteps.push([]{});
+            ExecutionSteps.push([this]{ Fetched =  (uint16_t)StackPop(); });
+            ExecutionSteps.push([this]{ Fetched |= (uint16_t)StackPop() << 8; });
+            ExecutionSteps.push([this]{ Registers.SetPC(Fetched); });
+        }};
+        Opcodes[0xD9] = { "RETI", [this]{
+            ExecutionSteps.push([this]{ Bus->InterruptEnableRegister = IMEBack; });
+            ExecutionSteps.push([this]{ Fetched =  (uint16_t)StackPop(); });
+            ExecutionSteps.push([this]{ Fetched |= (uint16_t)StackPop() << 8; });
+            ExecutionSteps.push([this]{ Registers.SetPC(Fetched); });
+        }};
+        Opcodes[0xE9] = { "JP HL", [this]{
+            ExecutionSteps.push([this]{ Registers.SetPC(Registers.GetHL()); });
+        }};
+        Opcodes[0xF9] = { "LD SP, HL", [this]{
+            ExecutionSteps.push([this]{ Fetched = Registers.GetHL(); });
+            ExecutionSteps.push([this]{ Registers.SetSP(Fetched); });
+        }};
+
+        Opcodes[0xCA] = { "JP Z, a16", std::bind(jumpToImmediateAddress, IsFlagSet(Flags::Zero))};
+        Opcodes[0xDA] = { "JP C, a16", std::bind(jumpToImmediateAddress, IsFlagSet(Flags::Carry))};
+        Opcodes[0xEA] = { "LD (a16), A", [this]{
+            ExecutionSteps.push([this]{ Fetched = Fetch(); });
+            ExecutionSteps.push([this]{ Fetched = (((uint16_t)Fetch()) << 8); });
+            ExecutionSteps.push([]{});
+            ExecutionSteps.push([this]{ Write(Fetched, Registers.GetA()); });
+        }};
+        Opcodes[0xFA] = { "LD A, (a16)", [this]{
+            ExecutionSteps.push([this]{ Fetched = Fetch(); });
+            ExecutionSteps.push([this]{ Fetched = (((uint16_t)Fetch()) << 8); });
+            ExecutionSteps.push([]{});
+            ExecutionSteps.push([this]{ Registers.SetA(Read(Fetched)); });
+        }};
+
+        Opcodes[0xCB] = { "ILLEGAL OPCODE", illegal };
+        Opcodes[0xDB] = { "ILLEGAL OPCODE", illegal };
+        Opcodes[0xEB] = { "ILLEGAL OPCODE", illegal };
+        Opcodes[0xFB] = { "EI", [this]{ ExecutionSteps.push([this] { InstructionsToSetIME = 1; }); }};
+
+        Opcodes[0xCC] = { "CALL Z, a16", std::bind(callImmediateAddress, IsFlagSet(Flags::Zero))};
+        Opcodes[0xDC] = { "CALL C, a16", std::bind(callImmediateAddress, IsFlagSet(Flags::Carry))};
+        Opcodes[0xEC] = { "ILLEGAL OPCODE", illegal};
+        Opcodes[0xFC] = { "ILLEGAL OPCODE", illegal};
+
+        Opcodes[0xCD] = { "CALL a16", std::bind(callImmediateAddress, true)};
+        Opcodes[0xDD] = { "ILLEGAL OPCODE", illegal};
+        Opcodes[0xED] = { "ILLEGAL OPCODE", illegal};
+        Opcodes[0xFD] = { "ILLEGAL OPCODE", illegal};
+
+        Opcodes[0xCE] = { "ADC A, d8", [this, HalfCarryHelper]{
+            ExecutionSteps.push([this, HalfCarryHelper]{
+                uint8_t reg = Fetch();
+                UnsetFlag(Flags::Subtraction);
+                uint8_t carryVal = IsFlagSet(Flags::Carry) ? 1 : 0;
+                HalfCarryHelper(reg, Registers.Accumulator + carryVal);
+                uint16_t result = (uint16_t)reg + (uint16_t)Registers.Accumulator + (uint16_t)carryVal;
+                Registers.SetA((uint8_t)result & 0xFF);
+
+                (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
+            });
+        }};
+        Opcodes[0xDE] = { "SBC A, d8", [this, HalfCarryHelper]{
+            ExecutionSteps.push([this, HalfCarryHelper]{
+                uint8_t reg = Fetch();
+                SetFlag(Flags::Subtraction);
+                uint8_t carryVal = IsFlagSet(Flags::Carry) ? 1 : 0;
+                HalfCarryHelper(reg, Registers.Accumulator - carryVal);
+                uint16_t result = (uint16_t)Registers.Accumulator - (uint16_t)reg - carryVal;
+                Registers.SetA((uint8_t)result & 0xFF);
+
+                (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
+            });
+        }};
+        Opcodes[0xEE] = { "XOR d8", [this, HalfCarryHelper]{
+            ExecutionSteps.push([this, HalfCarryHelper]{
+                uint8_t reg = Fetch();
+                uint16_t result = (uint16_t)Registers.Accumulator & (uint16_t)reg;
+                Registers.SetA((uint8_t)result ^ 0xFF);
+
+                UnsetFlag(Flags::Subtraction);
+                UnsetFlag(Flags::HalfCarry);
+                UnsetFlag(Flags::Carry);
+                (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
+            });
+        }};
+        Opcodes[0xFE] = { "CP d8", [this, HalfCarryHelper]{
+            ExecutionSteps.push([this, HalfCarryHelper]{
+                uint8_t reg = Fetch();
+                SetFlag(Flags::Subtraction);
+
+                HalfCarryHelper(reg, Registers.Accumulator);
+                uint16_t result = (uint16_t)Registers.Accumulator - (uint16_t)reg;
+                //Registers.SetA((uint8_t)result & 0xFF);
+
+                (result & 0xFF00) > 0 ? SetFlag(Flags::Carry) : UnsetFlag(Flags::Carry);
+                (result & 0xFF)  == 0 ? SetFlag(Flags::Zero)  : UnsetFlag(Flags::Zero);
+            });
+        }};
+
+        Opcodes[0xC7] = { "RST 08h", std::bind(reset, 0x08)};
+        Opcodes[0xD7] = { "RST 18h", std::bind(reset, 0x18)};
+        Opcodes[0xE7] = { "RST 28h", std::bind(reset, 0x28)};
+        Opcodes[0xF7] = { "RST 38h", std::bind(reset, 0x38)};
 
 #pragma endregion
 
