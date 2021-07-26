@@ -11,7 +11,7 @@ namespace Emulator{
         typedef void     (CpuRegisters::*SetRegisterPtr)       (uint8_t data);
         typedef uint8_t  (CpuRegisters::*GetRegisterPtr)       ();
     }
-    
+
     void GbCpu::SetOpcodes() {
         std::function<void(uint8_t, uint8_t)>   HalfCarryHelper  ([this](uint8_t r1, uint8_t r2){
             if((((r1 & 0xf) + (r2 & 0xf)) & 0x10) == 0x10 ){

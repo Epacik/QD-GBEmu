@@ -63,7 +63,7 @@ namespace Emulator
         int InstructionsToResetIME = -1;
         int InstructionsToSetIME = -1;
 
-        bool IMEBack = falseh;
+        bool IMEBack = false;
 
 
     public:
