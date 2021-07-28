@@ -83,10 +83,11 @@ namespace Emulator
 
         private:
         void SetOpcodes();
+        void SetExtendedOpcodes();
 
         //Opcodes
         std::unordered_map<uint8_t, Opcode> Opcodes;
-        std::unordered_map<uint8_t, Opcode> Opcodes16b;
+        std::unordered_map<uint8_t, Opcode> OpcodesEX;
     };
 }
 

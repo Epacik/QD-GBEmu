@@ -9,6 +9,8 @@
 #include <wx/string.h>
 #include <bitset>
 #include <string>
+#include <memory>
+#include <functional>
 
 namespace Emulator {
     class CpuRegisters {
@@ -63,6 +65,13 @@ namespace Emulator {
         uint16_t GetPC();
         uint16_t SP = 0xFFFE;
         uint16_t PC = 0x0100;
+
+        void SetValueAtAddtesInHL(uint8_t value);
+        uint8_t GetValueAtAddressInHL();
+        std::unique_ptr<std::function<void(uint16_t, uint8_t)>> Write;
+        std::unique_ptr<std::function<uint8_t(uint16_t)>> Read;
+
+
 
     };
 

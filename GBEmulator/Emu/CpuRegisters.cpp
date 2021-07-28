@@ -121,4 +121,17 @@ namespace Emulator {
     uint16_t CpuRegisters::GetPC() {
         return PC;
     }
+
+    void CpuRegisters::SetValueAtAddtesInHL(uint8_t value) {
+        if(Write != nullptr){
+            (*Write)(GetHL(), value);
+        }
+    }
+
+    uint8_t CpuRegisters::GetValueAtAddressInHL() {
+        if(Read != nullptr) {
+            return (*Read)(GetHL());
+        }
+        return 0x00;
+    }
 }
