@@ -87,7 +87,7 @@ namespace Emulator
 
         //Opcodes
         std::unordered_map<uint8_t, Opcode> Opcodes;
-        std::unordered_map<uint8_t, Opcode> OpcodesEX;
+        std::unordered_map<uint8_t, Opcode> OpcodesEx;
     };
 }
 

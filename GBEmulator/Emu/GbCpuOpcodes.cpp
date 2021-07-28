@@ -727,7 +727,7 @@ namespace Emulator {
 #pragma  endregion
 
         //TODO: do the halt Opcode
-        Opcodes[0x76] = {"HALT", [this] {}};
+        Opcodes[0x76] = {"HALT", [this] { Halt = true; }};
 
 #pragma region 0x77 -> 0x7F
 
@@ -1099,7 +1099,7 @@ namespace Emulator {
 
         Opcodes[0xCB] = {"", [this] {
             auto f = Fetch();
-            OpcodesEX[f].Exec();
+            OpcodesEx[f].Exec();
         }};
         Opcodes[0xDB] = {"ILLEGAL OPCODE", illegal};
         Opcodes[0xEB] = {"ILLEGAL OPCODE", illegal};
@@ -1421,170 +1421,342 @@ namespace Emulator {
                     SetFlag(Flags::HalfCarry);
                 });
             });
+
+        std::function<void(uint8_t, GetRegisterPtr, SetRegisterPtr, bool)> resetBitOfRegister
+                ([this](uint8_t bit, GetRegisterPtr get, SetRegisterPtr set, bool wasteClocks){
+                    ExecutionSteps.push([this, get]{
+
+                        Fetched = (uint8_t)std::invoke(get, Registers);
+                    });
+
+                    if(wasteClocks){
+                        ExecutionSteps.push([]{});
+                        ExecutionSteps.push([]{});
+                    }
+                    ExecutionSteps.push([this, bit, set]{
+                        std::invoke(set, Registers, ~bit & ((uint8_t)Fetched));
+                    });
+                });
+
+        std::function<void(uint8_t, GetRegisterPtr, SetRegisterPtr, bool)> setBitOfRegister
+                ([this](uint8_t bit, GetRegisterPtr get, SetRegisterPtr set, bool wasteClocks){
+                    ExecutionSteps.push([this, get]{
+
+                        Fetched = (uint8_t)std::invoke(get, Registers);
+                    });
+
+                    if(wasteClocks){
+                        ExecutionSteps.push([]{});
+                        ExecutionSteps.push([]{});
+                    }
+                    ExecutionSteps.push([this, bit, set]{
+                        std::invoke(set, Registers, bit | ((uint8_t)Fetched));
+                    });
+                });
 #pragma endregion
 
 #pragma region 0x00 -> 0x0F
 
-        OpcodesEX[0x00] = { "RLC B",    std::bind(rotateRegisterLeft, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x01] = { "RLC C",    std::bind(rotateRegisterLeft, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x02] = { "RLC D",    std::bind(rotateRegisterLeft, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x03] = { "RLC E",    std::bind(rotateRegisterLeft, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x04] = { "RLC H",    std::bind(rotateRegisterLeft, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x05] = { "RLC L",    std::bind(rotateRegisterLeft, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x06] = { "RLC (HL)", std::bind(rotateRegisterLeft, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x07] = { "RLC A",    std::bind(rotateRegisterLeft, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x00] = {"RLC B", std::bind(rotateRegisterLeft, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x01] = {"RLC C", std::bind(rotateRegisterLeft, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x02] = {"RLC D", std::bind(rotateRegisterLeft, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x03] = {"RLC E", std::bind(rotateRegisterLeft, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x04] = {"RLC H", std::bind(rotateRegisterLeft, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x05] = {"RLC L", std::bind(rotateRegisterLeft, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x06] = {"RLC (HL)", std::bind(rotateRegisterLeft, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x07] = {"RLC A", std::bind(rotateRegisterLeft, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
-        OpcodesEX[0x08] = { "RRC B",    std::bind(rotateRegisterRight, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x09] = { "RRC C",    std::bind(rotateRegisterRight, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x0A] = { "RRC D",    std::bind(rotateRegisterRight, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x0B] = { "RRC E",    std::bind(rotateRegisterRight, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x0C] = { "RRC H",    std::bind(rotateRegisterRight, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x0D] = { "RRC L",    std::bind(rotateRegisterRight, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x0E] = { "RRC (HL)", std::bind(rotateRegisterRight, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x0F] = { "RRC A",    std::bind(rotateRegisterRight, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x08] = {"RRC B", std::bind(rotateRegisterRight, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x09] = {"RRC C", std::bind(rotateRegisterRight, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x0A] = {"RRC D", std::bind(rotateRegisterRight, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x0B] = {"RRC E", std::bind(rotateRegisterRight, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x0C] = {"RRC H", std::bind(rotateRegisterRight, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x0D] = {"RRC L", std::bind(rotateRegisterRight, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x0E] = {"RRC (HL)", std::bind(rotateRegisterRight, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x0F] = {"RRC A", std::bind(rotateRegisterRight, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
 #pragma endregion
 #pragma  region 0x10 -> 0x1F
 
-        OpcodesEX[0x10] = { "RL B",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x11] = { "RL C",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x12] = { "RL D",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x13] = { "RL E",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x14] = { "RL H",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x15] = { "RL L",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x16] = { "RL (HL)", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x17] = { "RL A",    std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x10] = {"RL B", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x11] = {"RL C", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x12] = {"RL D", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x13] = {"RL E", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x14] = {"RL H", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x15] = {"RL L", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x16] = {"RL (HL)", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x17] = {"RL A", std::bind(rotateRegisterLeftTroughCarry, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
-        OpcodesEX[0x18] = { "RR B",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x19] = { "RR C",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x1A] = { "RR D",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x1B] = { "RR E",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x1C] = { "RR H",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x1D] = { "RR L",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x1E] = { "RR (HL)", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x1F] = { "RR A",    std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x18] = {"RR B", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x19] = {"RR C", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x1A] = {"RR D", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x1B] = {"RR E", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x1C] = {"RR H", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x1D] = {"RR L", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x1E] = {"RR (HL)", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x1F] = {"RR A", std::bind(rotateRegisterRightTroughCarry, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
 #pragma endregion
 #pragma  region 0x20 -> 0x2F
 
-        OpcodesEX[0x20] = { "SLA B",    std::bind(shiftRegisterLeft, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x21] = { "SLA C",    std::bind(shiftRegisterLeft, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x22] = { "SLA D",    std::bind(shiftRegisterLeft, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x23] = { "SLA E",    std::bind(shiftRegisterLeft, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x24] = { "SLA H",    std::bind(shiftRegisterLeft, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x25] = { "SLA L",    std::bind(shiftRegisterLeft, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x26] = { "SLA (HL)", std::bind(shiftRegisterLeft, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x27] = { "SLA A",    std::bind(shiftRegisterLeft, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x20] = {"SLA B", std::bind(shiftRegisterLeft, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x21] = {"SLA C", std::bind(shiftRegisterLeft, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x22] = {"SLA D", std::bind(shiftRegisterLeft, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x23] = {"SLA E", std::bind(shiftRegisterLeft, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x24] = {"SLA H", std::bind(shiftRegisterLeft, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x25] = {"SLA L", std::bind(shiftRegisterLeft, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x26] = {"SLA (HL)", std::bind(shiftRegisterLeft, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x27] = {"SLA A", std::bind(shiftRegisterLeft, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
-        OpcodesEX[0x28] = { "SRA B",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x29] = { "SRA C",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x2A] = { "SRA D",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x2B] = { "SRA E",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x2C] = { "SRA H",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x2D] = { "SRA L",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x2E] = { "SRA (HL)", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x2F] = { "SRA A",    std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x28] = {"SRA B", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x29] = {"SRA C", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x2A] = {"SRA D", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x2B] = {"SRA E", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x2C] = {"SRA H", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x2D] = {"SRA L", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x2E] = {"SRA (HL)", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x2F] = {"SRA A", std::bind(shiftRegisterRightNoBit7Change, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
 #pragma endregion
 #pragma  region 0x30 -> 0x3F
 
-        OpcodesEX[0x30] = { "SWAP B",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x31] = { "SWAP C",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x32] = { "SWAP D",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x33] = { "SWAP E",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x34] = { "SWAP H",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x35] = { "SWAP L",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x36] = { "SWAP (HL)", std::bind(swapNybblesOfARegister, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x37] = { "SWAP A",    std::bind(swapNybblesOfARegister, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x30] = {"SWAP B", std::bind(swapNybblesOfARegister, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x31] = {"SWAP C", std::bind(swapNybblesOfARegister, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x32] = {"SWAP D", std::bind(swapNybblesOfARegister, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x33] = {"SWAP E", std::bind(swapNybblesOfARegister, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x34] = {"SWAP H", std::bind(swapNybblesOfARegister, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x35] = {"SWAP L", std::bind(swapNybblesOfARegister, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x36] = {"SWAP (HL)", std::bind(swapNybblesOfARegister, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x37] = {"SWAP A", std::bind(swapNybblesOfARegister, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
-        OpcodesEX[0x38] = { "SRL B",    std::bind(shiftRegisterRight, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
-        OpcodesEX[0x39] = { "SRL C",    std::bind(shiftRegisterRight, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
-        OpcodesEX[0x3A] = { "SRL D",    std::bind(shiftRegisterRight, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
-        OpcodesEX[0x3B] = { "SRL E",    std::bind(shiftRegisterRight, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
-        OpcodesEX[0x3C] = { "SRL H",    std::bind(shiftRegisterRight, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
-        OpcodesEX[0x3D] = { "SRL L",    std::bind(shiftRegisterRight, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
-        OpcodesEX[0x3E] = { "SRL (HL)", std::bind(shiftRegisterRight, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
-        OpcodesEX[0x3F] = { "SRL A",    std::bind(shiftRegisterRight, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x38] = {"SRL B", std::bind(shiftRegisterRight, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x39] = {"SRL C", std::bind(shiftRegisterRight, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x3A] = {"SRL D", std::bind(shiftRegisterRight, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x3B] = {"SRL E", std::bind(shiftRegisterRight, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x3C] = {"SRL H", std::bind(shiftRegisterRight, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x3D] = {"SRL L", std::bind(shiftRegisterRight, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x3E] = {"SRL (HL)", std::bind(shiftRegisterRight, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x3F] = {"SRL A", std::bind(shiftRegisterRight, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 
 #pragma endregion
 #pragma region 0x40 -> 0x7F
 
-        Opcodes[0x40] = { "BIT 0, B",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetB, false)};
-        Opcodes[0x41] = { "BIT 0, C",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetC, false)};
-        Opcodes[0x42] = { "BIT 0, D",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetD, false)};
-        Opcodes[0x43] = { "BIT 0, E",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetE, false)};
-        Opcodes[0x44] = { "BIT 0, H",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetH, false)};
-        Opcodes[0x45] = { "BIT 0, L",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetL, false)};
-        Opcodes[0x46] = { "BIT 0, (HL)", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x47] = { "BIT 0, A",    std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetA, false)};
+        OpcodesEx[0x40] = {"BIT 0, B", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x41] = {"BIT 0, C", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x42] = {"BIT 0, D", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x43] = {"BIT 0, E", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x44] = {"BIT 0, H", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x45] = {"BIT 0, L", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x46] = {"BIT 0, (HL)", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x47] = {"BIT 0, A", std::bind(testBitOfRegister, 0b1 << 0, &CpuRegisters::GetA, false)};
 
-        Opcodes[0x48] = { "BIT 1, B",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetB, false)};
-        Opcodes[0x49] = { "BIT 1, C",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetC, false)};
-        Opcodes[0x4A] = { "BIT 1, D",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetD, false)};
-        Opcodes[0x4B] = { "BIT 1, E",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetE, false)};
-        Opcodes[0x4C] = { "BIT 1, H",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetH, false)};
-        Opcodes[0x4D] = { "BIT 1, L",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetL, false)};
-        Opcodes[0x4E] = { "BIT 1, (HL)", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x4F] = { "BIT 1, A",    std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetA, false)};
-
-
-
-        Opcodes[0x50] = { "BIT 2, B",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetB, false)};
-        Opcodes[0x51] = { "BIT 2, C",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetC, false)};
-        Opcodes[0x52] = { "BIT 2, D",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetD, false)};
-        Opcodes[0x53] = { "BIT 2, E",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetE, false)};
-        Opcodes[0x54] = { "BIT 2, H",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetH, false)};
-        Opcodes[0x55] = { "BIT 2, L",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetL, false)};
-        Opcodes[0x56] = { "BIT 2, (HL)", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x57] = { "BIT 2, A",    std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetA, false)};
-
-        Opcodes[0x58] = { "BIT 3, B",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetB, false)};
-        Opcodes[0x59] = { "BIT 3, C",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetC, false)};
-        Opcodes[0x5A] = { "BIT 3, D",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetD, false)};
-        Opcodes[0x5B] = { "BIT 3, E",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetE, false)};
-        Opcodes[0x5C] = { "BIT 3, H",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetH, false)};
-        Opcodes[0x5D] = { "BIT 3, L",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetL, false)};
-        Opcodes[0x5E] = { "BIT 3, (HL)", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x5F] = { "BIT 3, A",    std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetA, false)};
+        OpcodesEx[0x48] = {"BIT 1, B", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x49] = {"BIT 1, C", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x4A] = {"BIT 1, D", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x4B] = {"BIT 1, E", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x4C] = {"BIT 1, H", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x4D] = {"BIT 1, L", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x4E] = {"BIT 1, (HL)", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x4F] = {"BIT 1, A", std::bind(testBitOfRegister, 0b1 << 1, &CpuRegisters::GetA, false)};
 
 
-        Opcodes[0x60] = { "BIT 4, B",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetB, false)};
-        Opcodes[0x61] = { "BIT 4, C",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetC, false)};
-        Opcodes[0x62] = { "BIT 4, D",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetD, false)};
-        Opcodes[0x63] = { "BIT 4, E",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetE, false)};
-        Opcodes[0x64] = { "BIT 4, H",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetH, false)};
-        Opcodes[0x65] = { "BIT 4, L",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetL, false)};
-        Opcodes[0x66] = { "BIT 4, (HL)", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x67] = { "BIT 4, A",    std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetA, false)};
 
-        Opcodes[0x68] = { "BIT 5, B",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetB, false)};
-        Opcodes[0x69] = { "BIT 5, C",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetC, false)};
-        Opcodes[0x6A] = { "BIT 5, D",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetD, false)};
-        Opcodes[0x6B] = { "BIT 5, E",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetE, false)};
-        Opcodes[0x6C] = { "BIT 5, H",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetH, false)};
-        Opcodes[0x6D] = { "BIT 5, L",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetL, false)};
-        Opcodes[0x6E] = { "BIT 5, (HL)", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x6F] = { "BIT 5, A",    std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetA, false)};
+        OpcodesEx[0x50] = {"BIT 2, B", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x51] = {"BIT 2, C", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x52] = {"BIT 2, D", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x53] = {"BIT 2, E", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x54] = {"BIT 2, H", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x55] = {"BIT 2, L", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x56] = {"BIT 2, (HL)", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x57] = {"BIT 2, A", std::bind(testBitOfRegister, 0b1 << 2, &CpuRegisters::GetA, false)};
+
+        OpcodesEx[0x58] = {"BIT 3, B", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x59] = {"BIT 3, C", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x5A] = {"BIT 3, D", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x5B] = {"BIT 3, E", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x5C] = {"BIT 3, H", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x5D] = {"BIT 3, L", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x5E] = {"BIT 3, (HL)", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x5F] = {"BIT 3, A", std::bind(testBitOfRegister, 0b1 << 3, &CpuRegisters::GetA, false)};
 
 
-        Opcodes[0x70] = { "BIT 6, B",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetB, false)};
-        Opcodes[0x71] = { "BIT 6, C",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetC, false)};
-        Opcodes[0x72] = { "BIT 6, D",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetD, false)};
-        Opcodes[0x73] = { "BIT 6, E",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetE, false)};
-        Opcodes[0x74] = { "BIT 6, H",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetH, false)};
-        Opcodes[0x75] = { "BIT 6, L",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetL, false)};
-        Opcodes[0x76] = { "BIT 6, (HL)", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x77] = { "BIT 6, A",    std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetA, false)};
+        OpcodesEx[0x60] = {"BIT 4, B", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x61] = {"BIT 4, C", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x62] = {"BIT 4, D", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x63] = {"BIT 4, E", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x64] = {"BIT 4, H", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x65] = {"BIT 4, L", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x66] = {"BIT 4, (HL)", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x67] = {"BIT 4, A", std::bind(testBitOfRegister, 0b1 << 4, &CpuRegisters::GetA, false)};
 
-        Opcodes[0x78] = { "BIT 7, B",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetB, false)};
-        Opcodes[0x79] = { "BIT 7, C",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetC, false)};
-        Opcodes[0x7A] = { "BIT 7, D",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetD, false)};
-        Opcodes[0x7B] = { "BIT 7, E",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetE, false)};
-        Opcodes[0x7C] = { "BIT 7, H",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetH, false)};
-        Opcodes[0x7D] = { "BIT 7, L",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetL, false)};
-        Opcodes[0x7E] = { "BIT 7, (HL)", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetValueAtAddressInHL, true)};
-        Opcodes[0x7F] = { "BIT 7, A",    std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetA, false)};
+        OpcodesEx[0x68] = {"BIT 5, B", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x69] = {"BIT 5, C", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x6A] = {"BIT 5, D", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x6B] = {"BIT 5, E", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x6C] = {"BIT 5, H", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x6D] = {"BIT 5, L", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x6E] = {"BIT 5, (HL)", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x6F] = {"BIT 5, A", std::bind(testBitOfRegister, 0b1 << 5, &CpuRegisters::GetA, false)};
 
+
+        OpcodesEx[0x70] = {"BIT 6, B", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x71] = {"BIT 6, C", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x72] = {"BIT 6, D", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x73] = {"BIT 6, E", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x74] = {"BIT 6, H", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x75] = {"BIT 6, L", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x76] = {"BIT 6, (HL)", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x77] = {"BIT 6, A", std::bind(testBitOfRegister, 0b1 << 6, &CpuRegisters::GetA, false)};
+
+        OpcodesEx[0x78] = {"BIT 7, B", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetB, false)};
+        OpcodesEx[0x79] = {"BIT 7, C", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetC, false)};
+        OpcodesEx[0x7A] = {"BIT 7, D", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetD, false)};
+        OpcodesEx[0x7B] = {"BIT 7, E", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetE, false)};
+        OpcodesEx[0x7C] = {"BIT 7, H", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetH, false)};
+        OpcodesEx[0x7D] = {"BIT 7, L", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetL, false)};
+        OpcodesEx[0x7E] = {"BIT 7, (HL)", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetValueAtAddressInHL, true)};
+        OpcodesEx[0x7F] = {"BIT 7, A", std::bind(testBitOfRegister, 0b1 << 7, &CpuRegisters::GetA, false)};
+
+#pragma endregion
+#pragma region 0x80 -> 0xBF
+
+        OpcodesEx[0x80] = {"RES 0, B",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x81] = {"RES 0, C",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x82] = {"RES 0, D",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x83] = {"RES 0, E",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x84] = {"RES 0, H",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x85] = {"RES 0, L",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x86] = {"RES 0, (HL)", std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x87] = {"RES 0, A",    std::bind(resetBitOfRegister, 0x1 << 0, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x88] = {"RES 1, B",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x89] = {"RES 1, C",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x8A] = {"RES 1, D",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x8B] = {"RES 1, E",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x8C] = {"RES 1, H",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x8D] = {"RES 1, L",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x8E] = {"RES 1, (HL)", std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x8F] = {"RES 1, A",    std::bind(resetBitOfRegister, 0x1 << 1, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+
+        OpcodesEx[0x90] = {"RES 2, B",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x91] = {"RES 2, C",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x92] = {"RES 2, D",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x93] = {"RES 2, E",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x94] = {"RES 2, H",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x95] = {"RES 2, L",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x96] = {"RES 2, (HL)", std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x97] = {"RES 2, A",    std::bind(resetBitOfRegister, 0x1 << 2, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0x98] = {"RES 3, B",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0x99] = {"RES 3, C",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0x9A] = {"RES 3, D",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0x9B] = {"RES 3, E",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0x9C] = {"RES 3, H",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0x9D] = {"RES 3, L",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0x9E] = {"RES 3, (HL)", std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0x9F] = {"RES 3, A",    std::bind(resetBitOfRegister, 0x1 << 3, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+
+        OpcodesEx[0xA0] = {"RES 4, B",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xA1] = {"RES 4, C",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xA2] = {"RES 4, D",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xA3] = {"RES 4, E",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xA4] = {"RES 4, H",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xA5] = {"RES 4, L",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xA6] = {"RES 4, (HL)", std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xA7] = {"RES 4, A",    std::bind(resetBitOfRegister, 0x1 << 4, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0xA8] = {"RES 5, B",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xA9] = {"RES 5, C",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xAA] = {"RES 5, D",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xAB] = {"RES 5, E",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xAC] = {"RES 5, H",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xAD] = {"RES 5, L",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xAE] = {"RES 5, (HL)", std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xAF] = {"RES 5, A",    std::bind(resetBitOfRegister, 0x1 << 5, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+
+        OpcodesEx[0xA0] = {"RES 6, B",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xA1] = {"RES 6, C",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xA2] = {"RES 6, D",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xA3] = {"RES 6, E",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xA4] = {"RES 6, H",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xA5] = {"RES 6, L",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xA6] = {"RES 6, (HL)", std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xA7] = {"RES 6, A",    std::bind(resetBitOfRegister, 0x1 << 6, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0xA8] = {"RES 7, B",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xA9] = {"RES 7, C",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xAA] = {"RES 7, D",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xAB] = {"RES 7, E",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xAC] = {"RES 7, H",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xAD] = {"RES 7, L",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xAE] = {"RES 7, (HL)", std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xAF] = {"RES 7, A",    std::bind(resetBitOfRegister, 0x1 << 7, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+#pragma endregion
+#pragma region 0xC0 -> 0xFF
+
+        OpcodesEx[0xC0] = {"SET 0, B",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xC1] = {"SET 0, C",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xC2] = {"SET 0, D",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xC3] = {"SET 0, E",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xC4] = {"SET 0, H",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xC5] = {"SET 0, L",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xC6] = {"SET 0, (HL)", std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xC7] = {"SET 0, A",    std::bind(setBitOfRegister, 0x1 << 0, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0xC8] = {"SET 1, B",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xC9] = {"SET 1, C",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xCA] = {"SET 1, D",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xCB] = {"SET 1, E",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xCC] = {"SET 1, H",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xCD] = {"SET 1, L",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xCE] = {"SET 1, (HL)", std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xCF] = {"SET 1, A",    std::bind(setBitOfRegister, 0x1 << 1, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+
+        OpcodesEx[0xD0] = {"SET 2, B",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xD1] = {"SET 2, C",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xD2] = {"SET 2, D",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xD3] = {"SET 2, E",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xD4] = {"SET 2, H",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xD5] = {"SET 2, L",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xD6] = {"SET 2, (HL)", std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xD7] = {"SET 2, A",    std::bind(setBitOfRegister, 0x1 << 2, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0xD8] = {"SET 3, B",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xD9] = {"SET 3, C",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xDA] = {"SET 3, D",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xDB] = {"SET 3, E",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xDC] = {"SET 3, H",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xDD] = {"SET 3, L",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xDE] = {"SET 3, (HL)", std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xDF] = {"SET 3, A",    std::bind(setBitOfRegister, 0x1 << 3, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+
+        OpcodesEx[0xE0] = {"SET 4, B",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xE1] = {"SET 4, C",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xE2] = {"SET 4, D",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xE3] = {"SET 4, E",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xE4] = {"SET 4, H",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xE5] = {"SET 4, L",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xE6] = {"SET 4, (HL)", std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xE7] = {"SET 4, A",    std::bind(setBitOfRegister, 0x1 << 4, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0xE8] = {"SET 5, B",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xE9] = {"SET 5, C",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xEA] = {"SET 5, D",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xEB] = {"SET 5, E",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xEC] = {"SET 5, H",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xED] = {"SET 5, L",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xEE] = {"SET 5, (HL)", std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xEF] = {"SET 5, A",    std::bind(setBitOfRegister, 0x1 << 5, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+
+        OpcodesEx[0xF0] = {"SET 6, B",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xF1] = {"SET 6, C",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xF2] = {"SET 6, D",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xF3] = {"SET 6, E",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xF4] = {"SET 6, H",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xF5] = {"SET 6, L",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xF6] = {"SET 6, (HL)", std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xF7] = {"SET 6, A",    std::bind(setBitOfRegister, 0x1 << 6, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
+        OpcodesEx[0xF8] = {"SET 7, B",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetB, &CpuRegisters::SetB, false)};
+        OpcodesEx[0xF9] = {"SET 7, C",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetC, &CpuRegisters::SetC, false)};
+        OpcodesEx[0xFA] = {"SET 7, D",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetD, &CpuRegisters::SetD, false)};
+        OpcodesEx[0xFB] = {"SET 7, E",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetE, &CpuRegisters::SetE, false)};
+        OpcodesEx[0xFC] = {"SET 7, H",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetH, &CpuRegisters::SetH, false)};
+        OpcodesEx[0xFD] = {"SET 7, L",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetL, &CpuRegisters::SetL, false)};
+        OpcodesEx[0xFE] = {"SET 7, (HL)", std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetValueAtAddressInHL, &CpuRegisters::SetValueAtAddtesInHL, true)};
+        OpcodesEx[0xFF] = {"SET 7, A",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 #pragma endregion
 
     }
