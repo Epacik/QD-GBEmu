@@ -11,8 +11,8 @@ namespace Windows{
 
     Registers::Registers(const wxPoint &pos)
             : wxFrame(nullptr, wxID_ANY, "Registers", pos, wxSize(200, 400)) {
-
-        GetApp().RegistersWindow = this;
+        app = &GetApp();
+        app->RegistersWindow = this;
         this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
         wxBoxSizer* MainSizer;
@@ -170,7 +170,7 @@ namespace Windows{
         //some binary to string converters
         using namespace Tools::StringConverters;
 
-        auto registers = GetApp().EmulatorBus->Cpu->Registers;
+        auto registers = app->EmulatorBus->Cpu->Registers;
 
         //Accumulator
         AccumulatorValue->SetLabel(GetBinaryString(registers.Accumulator));
