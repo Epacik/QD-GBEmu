@@ -6,13 +6,16 @@
 #include "../global.h"
 #include "../Application.h"
 #include "../Tools.h"
+#include "../Emu/CpuRegisters.h"
 
 namespace Windows{
-
+    bool init = true;
     Registers::Registers(const wxPoint &pos)
             : wxFrame(nullptr, wxID_ANY, "Registers", pos, wxSize(200, 400)) {
 
+        app = &GetApp();
         GetApp().RegistersWindow = this;
+        
         this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 
         wxBoxSizer* MainSizer;
@@ -144,7 +147,8 @@ namespace Windows{
 
         SetFocus();
 
-        UpdateValues();
+        //UpdateValues();
+        init = false;
     }
 
     Registers::~Registers() {
@@ -153,11 +157,13 @@ namespace Windows{
 
 
     // values used to limit updates
-    std::chrono::time_point<std::chrono::system_clock> UpdatedOn;
+    std::chrono::time_point<std::chrono::system_clock> UpdatedOn = std::chrono::system_clock::now();
     std::chrono::milliseconds UpdateDelta(100);
 
     // Get values of registers and displays them in a window
     void Registers::UpdateValues() {
+        if (init)
+            return;
 
         // limit updates so they won't use a half of a CPU
         // updates should occur at most once every 100ms or so
@@ -169,30 +175,29 @@ namespace Windows{
 
         //some binary to string converters
         using namespace Tools::StringConverters;
-
-        auto registers = GetApp().EmulatorBus->Cpu->Registers;
+        
 
         //Accumulator
-        AccumulatorValue->SetLabel(GetBinaryString(registers.Accumulator));
+        AccumulatorValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.Accumulator));
 
         FlagsValue->SetLabel(GetFlagsString
-        (registers.FlagsState));
+        (GetApp().EmulatorBus->Cpu->Registers.FlagsState));
 
-        BValue->SetLabel(GetBinaryString(registers.B));
+        BValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.B));
 
-        CValue->SetLabel(GetBinaryString(registers.C));
+        CValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.C));
 
-        DValue->SetLabel(GetBinaryString(registers.D));
+        DValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.D));
 
-        EValue->SetLabel(GetBinaryString(registers.E));
+        EValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.E));
 
-        HValue->SetLabel(GetBinaryString(registers.H));
+        HValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.H));
 
-        LValue->SetLabel(GetBinaryString(registers.L));
+        LValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.L));
 
-        SPValue->SetLabel(GetBinaryString(registers.SP) + " [0x" + GetHexString(registers.SP) + "]");
+        SPValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.SP) + " [0x" + GetHexString(GetApp().EmulatorBus->Cpu->Registers.SP) + "]");
 
-        PCValue->SetLabel(GetBinaryString(registers.PC) + " [0x" + GetHexString(registers.PC) + "]");
+        PCValue->SetLabel(GetBinaryString(GetApp().EmulatorBus->Cpu->Registers.PC) + " [0x" + GetHexString(GetApp().EmulatorBus->Cpu->Registers.PC) + "]");
     }
 
 

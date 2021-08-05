@@ -318,7 +318,9 @@ namespace Emulator {
         Opcodes[0x00] = {"NOP", [this] { ExecutionSteps.push([] {}); }};
         Opcodes[0x10] = {"STOP", [this] {
             ExecutionSteps.push([this] {
-                Fetch();
+                if(Fetch() == 0) {
+                  Bus->TurnLcdOff = true;
+                }
                 Bus->Clock.Stop();
                 //TODO: stop LCD
             });

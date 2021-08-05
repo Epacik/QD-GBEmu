@@ -24,6 +24,8 @@ namespace Windows {
 
         wxString GetFlagsString(uint8_t val);
 
+        Application* app;
+
     protected:
         wxStaticText* AccumulatorValue;
         wxStaticText* FlagsValue;
