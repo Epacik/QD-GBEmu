@@ -59,13 +59,13 @@ namespace Emulator {
 
     void GbBus::Write(uint16_t address, uint8_t data) {
         if (address >= 0x0000 && address <= 0x7FFF && Cartridge != nullptr) {
-            Cartridge->Write(address, data);
+            Cartridge->WriteRom(address, data);
         }
         else if (address >= 0x8000 && address <= 0x9FFF) {
             VideoRam[address - 0x8000] = data;
         }
         else if (address >= 0xA000 && address <= 0xBFFF) {
-            Cartridge->Write(address, data);
+            Cartridge->WriteRam(address, data);
             //ExternalRam[address - 0xA000] = data;
         }
         else if (address >= 0xC000 && address <= 0xDFFF) {
@@ -79,6 +79,9 @@ namespace Emulator {
             SpriteAttributeTable[address - 0xFE00] = data;
         }
 
+        else if (address >= 0xFF04 && address <= 0xFF07){
+            Timers.Write(address, data);
+        }
         else if (address >= 0xFF00 && address <= 0xFF7F) {
             IORegisters[address - 0xFF00] = data;
         }
@@ -97,14 +100,14 @@ namespace Emulator {
             return BootROM[address];
         }
         else if (address >= 0x0000 && address <= 0x7FFF) {
-            return Cartridge != nullptr ? Cartridge->Read(address) : 0x00;//0xFF;
+            return Cartridge != nullptr ? Cartridge->ReadRom(address) : 0x00;//0xFF;
         }
         else
         if (address >= 0x8000 && address <= 0x9FFF) {
             return VideoRam[address - 0x8000];
         }
         else if (address >= 0xA000 && address <= 0xBFFF) {
-            return Cartridge != nullptr ? Cartridge->Read(address) : 0xFF;
+            return Cartridge != nullptr ? Cartridge->ReadRam(address) : 0xFF;
             //return ExternalRam[address - 0xA000];
         }
         else if (address >= 0xC000 && address <= 0xDFFF) {
@@ -118,6 +121,9 @@ namespace Emulator {
             return SpriteAttributeTable[address - 0xFE00];
         }
 
+        else if (address >= 0xFF04 && address <= 0xFF07){
+            return Timers.Read(address);
+        }
         else if (address >= 0xFF00 && address <= 0xFF7F) {
             return IORegisters[address - 0xFF00];
         }
