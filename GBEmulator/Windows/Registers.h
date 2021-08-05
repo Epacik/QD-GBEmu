@@ -21,6 +21,7 @@ namespace Windows {
         void UpdateValues();
 
     private:
+        Application* app;
 
         wxString GetFlagsString(uint8_t val);
 

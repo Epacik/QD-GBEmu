@@ -14,7 +14,11 @@
 
 namespace Emulator {
     class CpuRegisters {
+
     public:
+        CpuRegisters() {}
+        CpuRegisters(CpuRegisters& reg) {}
+
         uint16_t GetAF();
         uint8_t GetA();
         uint8_t GetF();
