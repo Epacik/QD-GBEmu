@@ -7,10 +7,13 @@
 
 #include <cstdint>
 
-class GbCartridge {
+class GbCartridgeBase {
 public:
-    virtual void Write(uint16_t address, uint8_t data) = 0;
-    virtual uint8_t Read(uint16_t address) = 0;
+    virtual void WriteRom(uint16_t address, uint8_t data) = 0;
+    virtual uint8_t ReadRom(uint16_t address) = 0;
+
+    virtual void WriteRam(uint16_t address, uint8_t data) = 0;
+    virtual uint8_t ReadRam(uint16_t address) = 0;
 };
 
 
