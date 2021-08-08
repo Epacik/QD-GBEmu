@@ -33,13 +33,19 @@ namespace Emulator {
         }
 
         Cpu = std::make_unique<GbCpu>();
-        Cpu->Connect(this);
+        Cpu->Connect(shared_from_this());
+
+        Timers.Connect(shared_from_this());
+
+
 
         uint32_t clockNum = 0;
 
         Clock.OnClockCycle = std::make_shared<std::function<void()>>([this] {
             if(clockCycle % 4 == 0)
                 Cpu->OnClockCycle();
+
+            Timers.OnClockCycle();
 
 
             //App

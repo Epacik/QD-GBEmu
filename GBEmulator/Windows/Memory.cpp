@@ -5,7 +5,7 @@
 #include "Memory.h"
 #include "../Tools.h"
 namespace Windows{
-    Memory::Memory( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
+    Memory::Memory( const wxPoint& pos, const wxSize& size, long style ) : wxFrame( nullptr, wxID_ANY, "Memory", pos, size, style )
     {
         GetApp().MemoryWindow = this;
         this->SetSizeHints( wxDefaultSize, wxDefaultSize );

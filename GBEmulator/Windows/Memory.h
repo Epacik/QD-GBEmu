@@ -17,6 +17,8 @@
 #include <wx/sizer.h>
 #include <wx/frame.h>
 
+#include "../global.h"
+
 namespace Windows{
     class Memory : public wxFrame
     {
@@ -27,7 +29,7 @@ namespace Windows{
 
     public:
 
-        Memory( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+        Memory(const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = ToolWindowStyle | wxTAB_TRAVERSAL );
 
         ~Memory();
 

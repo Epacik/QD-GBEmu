@@ -11,10 +11,11 @@
 namespace Windows{
     bool init = true;
     Registers::Registers(const wxPoint &pos)
-            : wxFrame(nullptr, wxID_ANY, "Registers", pos, wxSize(200, 400)) {
+            : wxFrame(nullptr, wxID_ANY, "Registers", pos, wxSize(200, 400), ToolWindowStyle) {
 
         app = &GetApp();
         GetApp().RegistersWindow = this;
+        this->SetBackgroundColour(wxColour(*wxWHITE));
         
         this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 

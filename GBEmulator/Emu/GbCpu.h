@@ -10,20 +10,20 @@
 #include "GbBus.h"
 #include "CpuRegisters.h"
 #include "Instruction.h"
-
+#include "BusDevice.h"
 
 
 namespace Emulator
 {
     class GbBus;
 
-    class GbCpu
+    class GbCpu : public BusDevice
     {
     public:
         GbCpu();
         ~GbCpu();
 
-        void Connect(GbBus* bus);
+        
 
     enum class Interrupts {
         VerticalBlankInterrupt = 1,
@@ -34,15 +34,20 @@ namespace Emulator
     };
 
     private:
-        GbBus* Bus = nullptr;
+        
 
         void Write(uint16_t address, uint8_t data);
         uint8_t Read(uint16_t address);
 
+    public:
         uint8_t GetInterruptFlags();
-        void SetInterruptFlags(Interrupts val);
-        void SetInterruptFlags(uint8_t val);
+        void SetInterruptFlag(Interrupts val);
+        void UnsetInterruptFlag(Interrupts val);
 
+    private:
+        void SetInterruptFlag(uint8_t val);
+        void UnsetInterruptFlag(uint8_t val);
+            
         bool InterruptMasterEnable = true; // false if executing an interrupt handler
         bool Halt = false;
         bool Stop = false;
@@ -81,7 +86,7 @@ namespace Emulator
         bool IsFlagSet(Flags flag);
         void OnClockCycle();
 
-        private:
+    private:
         void SetOpcodes();
         void SetExtendedOpcodes();
 

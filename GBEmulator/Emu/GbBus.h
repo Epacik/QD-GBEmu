@@ -17,7 +17,7 @@ class Application;
 
 namespace Emulator {
     class GbCpu;
-    class GbBus
+    class GbBus : public std::enable_shared_from_this<GbBus>
     {
     public:
         GbBus();
@@ -38,7 +38,8 @@ namespace Emulator {
         GbClock Clock {4};
 
         void HangTheWholeEmulator();
-        std::unique_ptr<Emulator::GbCpu> Cpu;
+        std::unique_ptr<Emulator::GbCpu>    Cpu;
+        
 
         std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF
 

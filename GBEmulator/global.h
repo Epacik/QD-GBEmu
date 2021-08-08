@@ -12,4 +12,6 @@
 
 #include <memory>
 
+constexpr long ToolWindowStyle = wxCAPTION | wxCLOSE_BOX | wxSYSTEM_MENU | wxTAB_TRAVERSAL;
+
 #endif //GBEMU_GLOBAL_H

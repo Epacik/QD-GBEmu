@@ -59,30 +59,30 @@ namespace Emulator {
         //one step per clock cycle
         ExecutionSteps.push([]{/*NOP*/});
         ExecutionSteps.push([]{/*NOP*/});
-        ExecutionSteps.push([this]{ Fetched = Registers.PC; });
+        ExecutionSteps.push([this] { Fetched = Registers.PC; });
         ExecutionSteps.push([this] { StackPush(Fetched); });
         ExecutionSteps.push([this] {
             auto intrps = GetInterruptFlags() & Bus->InterruptEnableRegister;
 
             // clear corresponding flag and jump to vector
             if((intrps & (uint8_t)Interrupts::VerticalBlankInterrupt)) {
-                SetInterruptFlags((Interrupts)(~(uint8_t)Interrupts::VerticalBlankInterrupt));
+                UnsetInterruptFlag(Interrupts::VerticalBlankInterrupt);
                 Registers.PC = 0x0040;
             }
             else if((intrps & (uint8_t)Interrupts::LcdStatInterrupt)) {
-                SetInterruptFlags((Interrupts)(~(uint8_t)Interrupts::LcdStatInterrupt));
+                UnsetInterruptFlag(Interrupts::LcdStatInterrupt);
                 Registers.PC = 0x0048;
             }
             else if((intrps & (uint8_t)Interrupts::TimerInterrupt)) {
-                SetInterruptFlags((Interrupts)(~(uint8_t)Interrupts::TimerInterrupt));
+                UnsetInterruptFlag(Interrupts::TimerInterrupt);
                 Registers.PC = 0x0050;
             }
             else if((intrps & (uint8_t)Interrupts::SerialInterrupt)) {
-                SetInterruptFlags((Interrupts)(~(uint8_t)Interrupts::SerialInterrupt));
+                UnsetInterruptFlag(Interrupts::SerialInterrupt);
                 Registers.PC = 0x0058;
             }
             else if((intrps & (uint8_t)Interrupts::JoypadInterrupt)) {
-                SetInterruptFlags((Interrupts)(~(uint8_t)Interrupts::JoypadInterrupt));
+                UnsetInterruptFlag(Interrupts::JoypadInterrupt);
                 Registers.PC = 0x0060;
             }
         });
@@ -118,13 +118,24 @@ namespace Emulator {
         return Read(0xFF0F) & 0b00011111; // only lower 5 bits are interrupt flags
     }
 
-    inline void GbCpu::SetInterruptFlags(Interrupts val) {
-        SetInterruptFlags((uint8_t)val);
+    inline void GbCpu::SetInterruptFlag(Interrupts val) {
+        SetInterruptFlag((uint8_t)val);
     }
 
-    inline void GbCpu::SetInterruptFlags(uint8_t val){
+    inline void GbCpu::SetInterruptFlag(uint8_t val){
+        auto currentValue = GetInterruptFlags();
+        Write(0xFF0F, currentValue | val);
+    }
+
+    void GbCpu::UnsetInterruptFlag(Interrupts val)
+    {
+        UnsetInterruptFlag((uint8_t)val);
+    }
+
+    void GbCpu::UnsetInterruptFlag(uint8_t val)
+    {
         auto curVal = GetInterruptFlags();
-        Write(0xFF0F, curVal & val);
+        Write(0xFF0F, curVal & ~val);
     }
 
 //    void GbCpu::StackPush(uint16_t value) {

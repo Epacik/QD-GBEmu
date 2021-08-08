@@ -17,16 +17,16 @@ namespace Windows {
     };
 
     wxBEGIN_EVENT_TABLE(Main, wxFrame)
-        EVT_MENU((int)MenuItems::Hello,     Main::OnHello)
-        EVT_MENU((int)MenuItems::Registers, Main::OnOpenRegistersWindow)
-        EVT_MENU((int)MenuItems::Memory, Main::OnOpenRegistersWindow)
+        EVT_MENU((int)MenuItems::Hello,           Main::OnHello)
+        EVT_MENU((int)MenuItems::Registers,       Main::OnOpenRegistersWindow)
+        EVT_MENU((int)MenuItems::Memory,          Main::OnOpenMemoryWindow)
         EVT_MENU(wxID_EXIT,                       Main::OnExit)
         EVT_MENU(wxID_ABOUT,                      Main::OnAbout)
     wxEND_EVENT_TABLE()
 
     Main::Main(const wxString &title, const wxPoint &pos, const wxSize &size, Application *app)
             : wxFrame(nullptr, wxID_ANY, title, pos, size) {
-
+        this->SetBackgroundColour(wxColour(*wxWHITE));
         this->App = app;
         CreateMenuBar();
 
@@ -51,8 +51,8 @@ namespace Windows {
         // wxLogMessage("Opening registers window");
 
         if(App->RegistersWindow == nullptr){
-            auto regWindow = new Windows::Registers(wxPoint(50, 50));
-            regWindow->Show(true);
+            auto registersWindow = new Windows::Registers(wxPoint(50, 50));
+            registersWindow->Show(true);
             return;
         }
 
@@ -65,8 +65,8 @@ namespace Windows {
         // wxLogMessage("Opening registers window");
 
         if(App->MemoryWindow == nullptr){
-            auto regWindow = new Windows::Registers(wxPoint(50, 50));
-            regWindow->Show(true);
+            auto memoryWindow = new Windows::Memory(wxPoint(50, 50));
+            memoryWindow->Show(true);
             return;
         }
 
@@ -87,7 +87,7 @@ namespace Windows {
         // Windows
         auto debugMenu = new wxMenu;
         debugMenu->Append((int)MenuItems::Registers, "Registers", "Displays current state of registers");
-        debugMenu->Append((int)MenuItems::Registers, "Registers", "Displays current state of registers");
+        debugMenu->Append((int)MenuItems::Memory,    "Memory", "Displays current state of memory around ProgramCounter");
 
         // Help
         auto helpMenu = new wxMenu;

@@ -16,13 +16,14 @@ class Application: public wxApp
 public:
     virtual bool OnInit();
 
-    Windows::Main * MainWindow = nullptr;
+    Windows::Main      * MainWindow      = nullptr;
     Windows::Registers * RegistersWindow = nullptr;
+    Windows::Memory    * MemoryWindow    = nullptr;
 
     std::unique_ptr<Emulator::GbBus> EmulatorBus;
 
 
-    Windows::Memory *MemoryWindow;
+    
 };
 
 Application &GetApp();
