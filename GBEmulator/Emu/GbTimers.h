@@ -1,16 +1,20 @@
 //
 // Created by epat on 29.07.2021.
 //
-
-#include "../global.h"
-#include "BusDevice.h"
-#include <array>
-
 #ifndef GBEMU_GBTIMERS_H
 #define GBEMU_GBTIMERS_H
 
+#include <memory>
+#include <array>
+#include <cstdint>
+#include <array>
+#include "Interrupts.h"
+#include "GbBus.h"
+#include "GbCpu.h"
+
 namespace Emulator{
-    class GbTimers : public BusDevice {
+    class GbBus;
+    class GbTimers {
     private:
         uint16_t MainRegister = 0xABCC;
 
@@ -36,6 +40,11 @@ namespace Emulator{
         uint8_t GetDividerRegister() const;
         void    Write(uint16_t address, uint8_t data);
         uint8_t Read(uint16_t address) const;
+
+    public:
+        void Connect(GbBus* bus);
+    protected:
+        GbBus* Bus;
 
     };
 }

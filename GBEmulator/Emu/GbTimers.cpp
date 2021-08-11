@@ -51,7 +51,7 @@ namespace Emulator {
     
     void GbTimers::HandleTimerCounterOverflow()
     {
-        Bus->Cpu->SetInterruptFlag(GbCpu::Interrupts::TimerInterrupt);
+        Bus->SetInterruptFlag(Interrupts::TimerInterrupt);
 
         if(!PreventCopyingTimerModuloToTimerCounter)
             TimerCounter = TimerModulo;
@@ -92,5 +92,9 @@ namespace Emulator {
             case 3:  return TimerControl & 0b00000111;
             default: return 0;
         }
+    }
+    void GbTimers::Connect(GbBus* bus)
+    {
+        Bus = bus;
     }
 }

@@ -5,18 +5,24 @@
 #include <cstdint>
 #include <array>
 #include <memory>
+#include <iostream>
 
-
+#include "Interrupts.h"
 #include "GbCpu.h"
 #include "Devices/GbCartridge.h"
 #include "GbClock.h"
 #include "GbTimers.h"
+#include "GbJoypad.h"
 
 
 class Application;
 
 namespace Emulator {
     class GbCpu;
+    class GbCartridgeBase;
+    class GbJoypad;
+    class GbTimers;
+
     class GbBus : public std::enable_shared_from_this<GbBus>
     {
     public:
@@ -43,16 +49,18 @@ namespace Emulator {
 
         std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF
 
-        std::unique_ptr<GbCartridgeBase> Cartridge = nullptr;            // 0x0000 -> 0x7FFF & 0xA000 -> 0xBFFF
-//        std::array<uint8_t, 0x3FFF> GameRom0;
-//        std::array<uint8_t, 0x3FFF> GameRomX;
+        std::unique_ptr<Emulator::Cartridges::GbCartridgeBase> Cartridge = nullptr;
+                                                                    // 0x0000 -> 0x7FFF 
+                                                                    // & 0xA000 -> 0xBFFF
+
 
         std::array<uint8_t, 0x1FFF> VideoRam{};                      // 0x8000 -> 0x9FFF
-        //std::array<uint8_t, 0x1FFF> ExternalRam{};                   //
+        //std::array<uint8_t, 0x1FFF> ExternalRam{};                 //
         std::array<uint8_t, 0x1FFF> WorkRam{};                       // 0xC000 -> 0xDFFF
         std::array<uint8_t, 0x009F> SpriteAttributeTable{};          // 0xFE00 -> 0xFE9F
 
-        GbTimers Timers;                                             // 0xFF04 -> 0xFF07
+        std::unique_ptr <Emulator::GbJoypad> Joypad;                 // 0xFF00
+        std::unique_ptr <Emulator::GbTimers> Timers;                 // 0xFF04 -> 0xFF07
         std::array<uint8_t, 0x007F> IORegisters{};                   // 0xFF00 -> 0xFF7F
         std::array<uint8_t, 0x007F> HighRam{};                       // 0xFF80 -> 0xFFFE
 
@@ -67,6 +75,8 @@ namespace Emulator {
 
 
         bool TurnLcdOff;
+
+        void SetInterruptFlag(Emulator::Interrupts interrupt);
     };
 }
 #endif // !BUS_H

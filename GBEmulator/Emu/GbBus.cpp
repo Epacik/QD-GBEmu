@@ -1,4 +1,3 @@
-#include <iostream>
 #include "GbBus.h"
 
 class Application;
@@ -6,8 +5,6 @@ namespace Emulator {
     GbBus::GbBus(bool stop) : GbBus() {
         Clock.Stop();
     }
-
-
 
     GbBus::GbBus() {
 
@@ -33,11 +30,12 @@ namespace Emulator {
         }
 
         Cpu = std::make_unique<GbCpu>();
-        Cpu->Connect(shared_from_this());
+        Cpu->Connect(this);
 
-        Timers.Connect(shared_from_this());
+        Timers = std::make_unique<GbTimers>();
+        Timers->Connect(this);
 
-
+        Joypad = std::make_unique<GbJoypad>();
 
         uint32_t clockNum = 0;
 
@@ -45,8 +43,7 @@ namespace Emulator {
             if(clockCycle % 4 == 0)
                 Cpu->OnClockCycle();
 
-            Timers.OnClockCycle();
-
+            Timers->OnClockCycle();
 
             //App
             if(OnRefreshUI != nullptr){
@@ -65,13 +62,13 @@ namespace Emulator {
 
     void GbBus::Write(uint16_t address, uint8_t data) {
         if (address >= 0x0000 && address <= 0x7FFF && Cartridge != nullptr) {
-            Cartridge->WriteRom(address, data);
+            Cartridge->Write(address, data);
         }
         else if (address >= 0x8000 && address <= 0x9FFF) {
             VideoRam[address - 0x8000] = data;
         }
         else if (address >= 0xA000 && address <= 0xBFFF) {
-            Cartridge->WriteRam(address, data);
+            Cartridge->Write(address, data);
             //ExternalRam[address - 0xA000] = data;
         }
         else if (address >= 0xC000 && address <= 0xDFFF) {
@@ -86,7 +83,7 @@ namespace Emulator {
         }
 
         else if (address >= 0xFF04 && address <= 0xFF07){
-            Timers.Write(address, data);
+            Timers->Write(address, data);
         }
         else if (address >= 0xFF00 && address <= 0xFF7F) {
             IORegisters[address - 0xFF00] = data;
@@ -106,14 +103,14 @@ namespace Emulator {
             return BootROM[address];
         }
         else if (address >= 0x0000 && address <= 0x7FFF) {
-            return Cartridge != nullptr ? Cartridge->ReadRom(address) : 0x00;//0xFF;
+            return Cartridge != nullptr ? Cartridge->Read(address) : 0x00;//0xFF;
         }
         else
         if (address >= 0x8000 && address <= 0x9FFF) {
             return VideoRam[address - 0x8000];
         }
         else if (address >= 0xA000 && address <= 0xBFFF) {
-            return Cartridge != nullptr ? Cartridge->ReadRam(address) : 0xFF;
+            return Cartridge != nullptr ? Cartridge->Read(address) : 0xFF;
             //return ExternalRam[address - 0xA000];
         }
         else if (address >= 0xC000 && address <= 0xDFFF) {
@@ -128,7 +125,7 @@ namespace Emulator {
         }
 
         else if (address >= 0xFF04 && address <= 0xFF07){
-            return Timers.Read(address);
+            return Timers->Read(address);
         }
         else if (address >= 0xFF00 && address <= 0xFF7F) {
             return IORegisters[address - 0xFF00];
@@ -143,6 +140,11 @@ namespace Emulator {
         }
 
         return 0x00;
+    }
+
+    void GbBus::SetInterruptFlag(Emulator::Interrupts interrupt)
+    {
+        //Cpu->SetInterruptFlag(interrupt);
     }
 
     void GbBus::SetOnRefreshUI(std::shared_ptr<std::function<void()>> func) {

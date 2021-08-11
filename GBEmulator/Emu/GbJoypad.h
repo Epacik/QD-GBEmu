@@ -4,10 +4,15 @@
 
 #ifndef GBEMU_GBJOYPAD_H
 #define GBEMU_GBJOYPAD_H
-#include "../global.h"
-#include "BusDevice.h"
+
+#include <cstdint>
+#include "Interrupts.h"
+#include "GbBus.h"
+#include "GbCpu.h"
 
 namespace Emulator {
+    class GbBus;
+    class GbCpu;
 
     enum GbJoypadButtons {
         Start  = 1,
@@ -19,18 +24,29 @@ namespace Emulator {
         Left   = 1 << 6,
         Right  = 1 << 7,
     };
-
-    class GbJoypad : public BusDevice {
+    
+    class BusDevice;
+    class GbJoypad{
     private:
         GbJoypadButtons ButtonsPressed = (GbJoypadButtons)0;
 
         uint8_t selectedMap = 0x00;
+
+        bool IsButtonPressed(GbJoypadButtons button);
     public:
         uint8_t Read();
+
+        
 
         void Write(uint8_t value);
 
         void PressButtons(GbJoypadButtons buttons);
+
+
+    public:
+        void Connect(GbBus* bus);
+    protected:
+        GbBus* Bus;
 
     };
 }

@@ -11,6 +11,8 @@
 #endif
 
 #include <memory>
+#include <array>
+#include <cstdint>
 
 constexpr long ToolWindowStyle = wxCAPTION | wxCLOSE_BOX | wxSYSTEM_MENU | wxTAB_TRAVERSAL;
 

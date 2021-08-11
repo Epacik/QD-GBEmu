@@ -11,9 +11,9 @@ namespace Emulator {
 
     GbCpu::~GbCpu() = default;
 
-    void GbCpu::Connect(Emulator::GbBus* bus) {
-        this->Bus = bus;
-    }
+    /*void GbCpu::Connect(Emulator::GbBus* bus) {
+        (this->Bus) = bus;
+    }*/
 
     void GbCpu::OnClockCycle() {
         if(InstructionsToResetIME-- == 0)
@@ -25,7 +25,9 @@ namespace Emulator {
         if(InstructionsToSetIME < -1)
             InstructionsToSetIME = -1;
 
-        if(InterruptMasterEnable && ExecutionSteps.empty() && ((GetInterruptFlags() & Bus->InterruptEnableRegister) > 0)) {
+        if(InterruptMasterEnable &&
+            ExecutionSteps.empty() &&
+            ((GetInterruptFlags() & Bus->InterruptEnableRegister) > 0)) {
             PrepareForInterrupt();
         }
         else if(ExecutionSteps.empty()){
@@ -149,12 +151,6 @@ namespace Emulator {
         Write(--Registers.SP, value);
     }
 
-//    uint16_t GbCpu::StackPop16() {
-//        uint16_t low = Read(Registers.SP++);
-//        uint16_t high = Read(Registers.SP++);
-//        return (high << 8) | low;
-//    }
-
     uint8_t GbCpu::StackPop() {
         return Read(Registers.SP++);
     }
@@ -162,8 +158,4 @@ namespace Emulator {
     uint8_t GbCpu::Fetch() {
         return Read(Registers.PC++);
     }
-
-
-
-
 }

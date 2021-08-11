@@ -1,14 +1,12 @@
 #pragma once
-#include <memory>
 #include "GbBus.h"
 
 namespace Emulator {
+    class GbBus;
     class BusDevice {
     public:
-        void Connect(std::shared_ptr<GbBus> bus) {
-            Bus = bus;
-        }
+        virtual void Connect(GbBus* bus) = 0;
     protected:
-        std::shared_ptr<GbBus> Bus;
+        GbBus *Bus;
     };
 }

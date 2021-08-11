@@ -319,7 +319,7 @@ namespace Emulator {
         Opcodes[0x10] = {"STOP", [this] {
             ExecutionSteps.push([this] {
                 if(Fetch() == 0) {
-                  Bus->TurnLcdOff = true;
+                  this->Bus->TurnLcdOff = true;
                 }
                 Bus->Clock.Stop();
                 //TODO: stop LCD
@@ -1761,5 +1761,9 @@ namespace Emulator {
         OpcodesEx[0xFF] = {"SET 7, A",    std::bind(setBitOfRegister, 0x1 << 7, &CpuRegisters::GetA, &CpuRegisters::SetA, false)};
 #pragma endregion
 
+    }
+    void GbCpu::Connect(GbBus* bus)
+    {
+        Bus = bus;
     }
 }
