@@ -41,17 +41,21 @@ Emulator::Cartridges::GbCartridgeHeader::GbCartridgeHeader(
 
 bool Emulator::Cartridges::GbCartridgeHeader::ValidateCartridgeType(Emulator::Cartridges::GbCartridgeTypes type)
 {
-    switch (type) {
+    auto intType = (int)type;
+    switch (intType) {
     case 0x04:
     case 0x07:
     case 0x0A:
     case 0x0E:
         return false;
     }
-    if ((type >= 0x14 && type <= 0x18) || (type >= 0x23 && type <= 0xFB))
+    if ((intType >= 0x14 && intType <= 0x18) || (intType >= 0x23 && intType <= 0xFB))
         return false;
 
     return true;
 }
 
-
+Emulator::Cartridges::GbCartridgeBase::GbCartridgeBase(std::unique_ptr<GbCartridgeHeader> header)
+{
+    Header = std::move(header);
+}

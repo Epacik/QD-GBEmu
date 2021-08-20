@@ -7,20 +7,25 @@
 namespace Windows{
     Memory::Memory( const wxPoint& pos, const wxSize& size, long style ) : wxFrame( nullptr, wxID_ANY, "Memory", pos, size, style )
     {
+        Initialize();
+    }
+
+    void Memory::Initialize()
+    {
         GetApp().MemoryWindow = this;
-        this->SetSizeHints( wxDefaultSize, wxDefaultSize );
+        this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
         wxBoxSizer* bSizer3;
-        bSizer3 = new wxBoxSizer( wxVERTICAL );
+        bSizer3 = new wxBoxSizer(wxVERTICAL);
 
-        MemoryView = new wxDataViewListCtrl( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
-        bSizer3->Add( MemoryView, 1, wxALL|wxEXPAND, 5 );
-        MemoryView->AppendTextColumn( "Text" );
+        MemoryView = new wxDataViewListCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0);
+        bSizer3->Add(MemoryView, 1, wxALL | wxEXPAND, 5);
+        MemoryView->AppendTextColumn("Text");
 
-        this->SetSizer( bSizer3 );
+        this->SetSizer(bSizer3);
         this->Layout();
 
-        this->Centre( wxBOTH );
+        this->Centre(wxBOTH);
     }
 
     Memory::~Memory()

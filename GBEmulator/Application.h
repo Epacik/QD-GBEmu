@@ -22,7 +22,7 @@ public:
 
     std::unique_ptr<Emulator::GbBus> EmulatorBus;
 
-
+    
     
 };
 

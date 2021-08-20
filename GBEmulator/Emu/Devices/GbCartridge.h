@@ -10,8 +10,10 @@
 #include <array>
 namespace Emulator::Cartridges {
 
-
-    enum GbCartridgeTypes : uint8_t {
+    /// <summary>
+    /// Typy cartridg�w
+    /// </summary>
+    enum class GbCartridgeTypes : uint8_t {
         RomOnly = 0x00,
         MBC1 = 0x01,
         MBC1Ram = 0x02,
@@ -49,7 +51,7 @@ namespace Emulator::Cartridges {
         HuC3 = 0xFE,
         HuC1RamBattery = 0xFF,
     };
-    enum GbCartridgeRomSizes : uint8_t {
+    enum class GbCartridgeRomSizes: uint8_t{
         _32K2Banks = 0x00,
         _64K4Banks = 0x01,
         _128K8Banks = 0x02,
@@ -60,7 +62,7 @@ namespace Emulator::Cartridges {
         _4M256Banks = 0x07,
         _8M512Banks = 0x08,
     };
-    enum GbCartridgeRamSizes : uint8_t {
+    enum class GbCartridgeRamSizes : uint8_t {
         None = 0x00,
         _2K1Bank = 0x01,
         _8K1Bank = 0x02,
@@ -68,7 +70,7 @@ namespace Emulator::Cartridges {
         _128K16Banks = 0x04,
         _64K8Banks = 0x05,
     };
-    enum GbCartridgeDestinationCodes : uint8_t {
+    enum class GbCartridgeDestinationCodes : uint8_t {
         Japan = 0x00,
         RestOfTheWorld = 0x01,
     };
@@ -115,9 +117,12 @@ namespace Emulator::Cartridges {
     public:
         virtual void Write(uint16_t address, uint8_t data) = 0;
         virtual uint8_t Read(uint16_t address) = 0;
+        std::unique_ptr<GbCartridgeHeader> Header;
 
-        GbCartridgeBase() {};
+        GbCartridgeBase(){}
+        GbCartridgeBase(std::unique_ptr<GbCartridgeHeader> header);
         ~GbCartridgeBase() = default;
+
     };
     
 }

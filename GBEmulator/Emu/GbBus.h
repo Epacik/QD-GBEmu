@@ -10,6 +10,7 @@
 #include "Interrupts.h"
 #include "GbCpu.h"
 #include "Devices/GbCartridge.h"
+#include "Devices/Cartridges.h"
 #include "GbClock.h"
 #include "GbTimers.h"
 #include "GbJoypad.h"
@@ -27,6 +28,9 @@ namespace Emulator {
     {
     public:
         GbBus();
+        void ConnectDevices();
+        void InitializeMemory();
+        void SetOnClockCycle();
         explicit GbBus(bool stopClock);
 
         ~GbBus();
@@ -49,7 +53,7 @@ namespace Emulator {
 
         std::array<uint8_t, 0x00FF> BootROM{};                       // 0x0000 -> 0x00FF
 
-        std::unique_ptr<Emulator::Cartridges::GbCartridgeBase> Cartridge = nullptr;
+        std::unique_ptr<Emulator::Cartridges::GbCartridgeBase> Cartridge;
                                                                     // 0x0000 -> 0x7FFF 
                                                                     // & 0xA000 -> 0xBFFF
 

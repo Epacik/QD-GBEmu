@@ -9,19 +9,26 @@
 
 
 namespace Windows {
-
+    /// <summary>
+    /// Opcje w menu
+    /// </summary>
     enum class MenuItems {
         Hello = 1,
         Registers = 1 << 1,
         Memory = 1 << 2,
     };
 
+    /// <summary>
+    /// Rejestracja eventów dla okna 
+    /// </summary>
     wxBEGIN_EVENT_TABLE(Main, wxFrame)
         EVT_MENU((int)MenuItems::Hello,           Main::OnHello)
         EVT_MENU((int)MenuItems::Registers,       Main::OnOpenRegistersWindow)
         EVT_MENU((int)MenuItems::Memory,          Main::OnOpenMemoryWindow)
         EVT_MENU(wxID_EXIT,                       Main::OnExit)
         EVT_MENU(wxID_ABOUT,                      Main::OnAbout)
+
+        EVT_CLOSE(Main::OnClose)
     wxEND_EVENT_TABLE()
 
     Main::Main(const wxString &title, const wxPoint &pos, const wxSize &size, Application *app)
@@ -47,6 +54,10 @@ namespace Windows {
         wxLogMessage("Hello world from wxWidgets!");
     }
 
+    /// <summary>
+    /// Jeœli okno z widokiem rejestrów nie zosta³o otwarte otwiera nowe, jeœli zosta³o, pokazuje je u¿ytkownikowi
+    /// </summary>
+    /// <param name="event"></param>
     void Main::OnOpenRegistersWindow(wxCommandEvent &event) {
         // wxLogMessage("Opening registers window");
 
@@ -56,11 +67,15 @@ namespace Windows {
             return;
         }
 
-        App->RegistersWindow->SetFocus();
-        App->RegistersWindow->Show(true);
-
+        FocusWindow(App->RegistersWindow);
     }
 
+    
+
+    /// <summary>
+    /// Jeœli okno z widokiem pamiêci nie zosta³o otwarte otwiera nowe, jeœli zosta³o, pokazuje je u¿ytkownikowi
+    /// </summary>
+    /// <param name="event"></param>
     void Main::OnOpenMemoryWindow(wxCommandEvent &event) {
         // wxLogMessage("Opening registers window");
 
@@ -70,11 +85,19 @@ namespace Windows {
             return;
         }
 
-        App->MemoryWindow->SetFocus();
-        App->MemoryWindow->Show(true);
+        FocusWindow(App->MemoryWindow);
 
     }
 
+    void Windows::Main::FocusWindow(wxFrame* window)
+    {
+        window->SetFocus();
+        window->Show(true);
+    }
+
+    /// <summary>
+    /// Tworzenie paska menu i wype³nienie go opcjami
+    /// </summary>
     void Main::CreateMenuBar() {
         // File
         auto fileMenu = new wxMenu;
@@ -85,9 +108,9 @@ namespace Windows {
 
          
         // Windows
-        auto debugMenu = new wxMenu;
-        debugMenu->Append((int)MenuItems::Registers, "Registers", "Displays current state of registers");
-        debugMenu->Append((int)MenuItems::Memory,    "Memory", "Displays current state of memory around ProgramCounter");
+        auto windowsMenu = new wxMenu;
+        windowsMenu->Append((int)MenuItems::Registers, "Registers", "Displays current state of registers");
+        windowsMenu->Append((int)MenuItems::Memory,    "Memory", "Displays current state of memory around ProgramCounter");
 
         // Help
         auto helpMenu = new wxMenu;
@@ -97,11 +120,27 @@ namespace Windows {
         auto menuBar = new wxMenuBar;
 
         menuBar->Append(fileMenu,  "File");
-        menuBar->Append(debugMenu, "Debug");
+        menuBar->Append(windowsMenu, "Windows");
         menuBar->Append(helpMenu,  "Help");
 
         SetMenuBar(menuBar);
         //CreateStatusBar();
 
+    }
+
+
+    /// <summary>
+    /// Event wywo³ywany po klikniêciu przycisku zamkniêcia okna
+    /// </summary>
+    /// <param name="event"></param>
+    void Main::OnClose(wxCloseEvent& event)
+    {
+        if (App->MemoryWindow != nullptr)
+            App->MemoryWindow->Close();
+
+        if (App->RegistersWindow != nullptr)
+            App->RegistersWindow->Close();
+
+        Destroy();
     }
 }

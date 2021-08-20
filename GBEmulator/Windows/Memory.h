@@ -31,6 +31,8 @@ namespace Windows{
 
         Memory(const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = ToolWindowStyle | wxTAB_TRAVERSAL );
 
+        void Initialize();
+
         ~Memory();
 
         void AddValue(uint8_t value);

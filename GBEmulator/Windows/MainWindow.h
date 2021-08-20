@@ -25,16 +25,23 @@ namespace Windows {
 
         void OnAbout(wxCommandEvent &event);
 
+
         void OnOpenRegistersWindow(wxCommandEvent &event);
+
+        void FocusWindow(wxFrame* window);
 
         void OnOpenMemoryWindow(wxCommandEvent &event);
 
         void CreateMenuBar();
 
+        void OnClose(wxCloseEvent& event);
+
         Application * App;
 
     wxDECLARE_EVENT_TABLE();
     };
+
+    
 
 }
 #endif //GBEMU_MAINWINDOW_H

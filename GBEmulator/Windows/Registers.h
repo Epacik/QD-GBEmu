@@ -15,6 +15,7 @@ namespace Windows {
     class Registers : public wxFrame {
     public:
         Registers(const wxPoint &pos);
+        void Initialize();
         ~Registers();
 
 

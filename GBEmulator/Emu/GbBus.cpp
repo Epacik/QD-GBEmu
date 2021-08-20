@@ -1,5 +1,7 @@
 #include "GbBus.h"
 
+#include <memory>
+
 class Application;
 namespace Emulator {
     GbBus::GbBus(bool stop) : GbBus() {
@@ -8,27 +10,15 @@ namespace Emulator {
 
     GbBus::GbBus() {
 
-        // Reset values in devices connected to the GbBus
-        for (auto &item : VideoRam) {
-            item = 0x00;
-        }
-        /*for (auto &item : ExternalRam) {
-            item = 0x00;
-        }*/
-        for (auto &item : WorkRam) {
-            item = 0x00;
-        }
-        for (auto &item : SpriteAttributeTable) {
-            item = 0x00;
-        }
+        InitializeMemory();
 
-        for (auto &item : IORegisters) {
-            item = 0x00;
-        }
-        for (auto &item : HighRam) {
-            item = 0x00;
-        }
+        ConnectDevices();
 
+        SetOnClockCycle();
+    }
+
+    void GbBus::ConnectDevices()
+    {
         Cpu = std::make_unique<GbCpu>();
         Cpu->Connect(this);
 
@@ -37,20 +27,49 @@ namespace Emulator {
 
         Joypad = std::make_unique<GbJoypad>();
 
+        Cartridge.reset(new Cartridges::GbBlankCartridge());
+    }
+
+    void GbBus::InitializeMemory()
+    {
+        // Reset values in devices connected to the GbBus
+        for (auto& item : VideoRam) {
+            item = 0x00;
+        }
+        /*for (auto &item : ExternalRam) {
+        item = 0x00;
+        }*/
+        for (auto& item : WorkRam) {
+            item = 0x00;
+        }
+        for (auto& item : SpriteAttributeTable) {
+            item = 0x00;
+        }
+
+        for (auto& item : IORegisters) {
+            item = 0x00;
+        }
+        for (auto& item : HighRam) {
+            item = 0x00;
+        }
+    }
+
+    void GbBus::SetOnClockCycle()
+    {
         uint32_t clockNum = 0;
 
         Clock.OnClockCycle = std::make_shared<std::function<void()>>([this] {
-            if(clockCycle % 4 == 0)
+            if (clockCycle % 4 == 0)
                 Cpu->OnClockCycle();
 
             Timers->OnClockCycle();
 
             //App
-            if(OnRefreshUI != nullptr){
+            if (OnRefreshUI != nullptr) {
                 (*OnRefreshUI)();
             }
             clockCycle++;
-        });
+            });
     }
 
 
